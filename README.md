@@ -119,7 +119,7 @@ output — that gap once shipped a crash.
 ## Setup
 
 ```bash
-cp .env.example .env         # VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+npx supabase start           # local stack; .env.development already points at it
 npm run dev
 ```
 
@@ -132,6 +132,13 @@ a dashboard — local and prod must stay reproducible from `supabase/migrations/
 |---|---|---|
 | **dev** | local Docker stack (`npx supabase start`) | `.env.development`, committed (fixed demo keys) |
 | **prod** | Supabase project `bafwkzrqdziezdxfuujq` (us-west-2) | `.env.production.local`, gitignored |
+
+The app reads two variables: `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` (an `sb_publishable_…` key; set the same pair
+in Vercel). There is no secret key in this app: anything named `VITE_*` is
+compiled into the browser bundle, and the secret key bypasses RLS. Server-side
+code, if it ever exists, gets it from its own environment under a name without
+the `VITE_` prefix.
 
 ```bash
 npx supabase start                      # db, auth, storage, studio on :54321-54324
