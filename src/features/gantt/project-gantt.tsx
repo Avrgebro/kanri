@@ -11,8 +11,8 @@ import {
 import {
   useAddDependency,
   useDeleteDependency,
-  useUpdateTaskDates,
-} from "@/features/gantt/queries"
+  useUpdateTask,
+} from "@/features/tasks/queries"
 import { errorMessage } from "@/lib/errors"
 import type { Epic, Task, TaskDependency } from "@/types/domain"
 
@@ -64,7 +64,7 @@ function GanttView({
   const [data] = useState(() => toGanttData(tasks, epics, dependencies))
   const { derivedIds } = data
 
-  const updateDates = useUpdateTaskDates(projectId)
+  const updateTask = useUpdateTask(projectId)
   const addDependency = useAddDependency(projectId)
   const deleteDependency = useDeleteDependency(projectId)
 
@@ -87,7 +87,7 @@ function GanttView({
       if (inProgress || derivedIds.has(String(id))) return
       const { start, end } = api.getTask(id)
       if (!start || !end) return
-      updateDates.mutate(
+      updateTask.mutate(
         { id: String(id), ...toTaskDates(start, end) },
         { onError: fail("Could not save dates") },
       )

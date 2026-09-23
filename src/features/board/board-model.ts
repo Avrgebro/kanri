@@ -1,17 +1,7 @@
+import type { PositionWrite } from "@/features/tasks/queries"
+import { STATUSES } from "@/features/tasks/task-model"
 import { needsRebalance, rankBetween } from "@/lib/rank"
 import type { Epic, Task, TaskStatus } from "@/types/domain"
-
-/** Board columns, left to right. Exhaustive over TaskStatus by type. */
-export const STATUS_LABELS: Record<TaskStatus, string> = {
-  backlog: "Backlog",
-  todo: "To do",
-  in_progress: "In progress",
-  blocked: "Blocked",
-  review: "Review",
-  done: "Done",
-}
-
-export const STATUSES = Object.keys(STATUS_LABELS) as TaskStatus[]
 
 /** Tasks without an epic get their own lane rather than being forced into one. */
 export const NO_EPIC = "none"
@@ -79,11 +69,6 @@ export function subtaskCounts(tasks: Task[]) {
     counts.set(t.parent_id, c)
   }
   return counts
-}
-
-export interface PositionWrite {
-  id: string
-  position: number
 }
 
 /**

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react"
 
+import lockup from "@/assets/brand/kanri-lockup-stacked.svg"
 import { supabase } from "@/lib/supabase"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -23,13 +24,15 @@ export function SignInForm() {
   }
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-sidebar p-6">
+    <div className="flex min-h-svh flex-col items-center justify-center gap-8 bg-sidebar p-6">
+      <h1>
+        <img src={lockup} alt="kanri" className="h-24 w-auto" />
+      </h1>
       <form
         onSubmit={onSubmit}
         className="w-full max-w-sm rounded-xl border bg-background p-6 shadow-sm"
       >
-        <h1 className="text-lg font-semibold tracking-tight">kanri</h1>
-        <p className="mt-1 mb-6 text-sm text-muted-foreground">Sign in to continue.</p>
+        <p className="mb-6 text-sm text-muted-foreground">Sign in to continue.</p>
 
         <div className="grid gap-4">
           <div className="grid gap-2">

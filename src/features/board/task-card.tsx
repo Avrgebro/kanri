@@ -1,6 +1,6 @@
 import { useSortable } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { IconCalendar, IconSubtask } from "@tabler/icons-react"
+import { IconAlignLeft, IconCalendar, IconHourglass, IconSubtask } from "@tabler/icons-react"
 
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
@@ -17,17 +17,22 @@ const isOverdue = (task: Task) =>
   task.status !== "done" &&
   new Date(`${task.due_date}T23:59:59`) < new Date()
 
+export interface TaskCardProps {
+  task: Task
+  subtasks?: { done: number; total: number }
+  /** Unfinished finish-to-start predecessors; see `waitingOn`. */
+  waitingOn?: Task[]
+}
+
 export function TaskCardBody({
   task,
   subtasks,
+  waitingOn,
   className,
-}: {
-  task: Task
-  subtasks?: { done: number; total: number }
-  className?: string
-}) {
+}: TaskCardProps & { className?: string }) {
   const overdue = isOverdue(task)
-  const hasMeta = task.due_date || subtasks || task.tags.length > 0
+  const hasDescription = Boolean(task.description?.trim())
+  const hasMeta = task.due_date || subtasks || hasDescription || task.tags.length > 0
 
   return (
     <div
@@ -40,6 +45,17 @@ export function TaskCardBody({
       <p className={cn("font-medium", task.status === "done" && "line-through")}>
         {task.title}
       </p>
+
+      {/* Distinct from the Blocked column: this is derived from dependencies. */}
+      {waitingOn?.length ? (
+        <p className="mt-1.5 flex items-center gap-1 text-xs text-chart-5">
+          <IconHourglass className="size-3.5 shrink-0" />
+          <span className="truncate">
+            Waiting on{" "}
+            {waitingOn.length === 1 ? waitingOn[0].title : `${waitingOn.length} tasks`}
+          </span>
+        </p>
+      ) : null}
 
       {hasMeta && (
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted-foreground">
@@ -62,6 +78,10 @@ export function TaskCardBody({
             </span>
           )}
 
+          {hasDescription && (
+            <IconAlignLeft className="size-3.5" aria-label="Has a description" />
+          )}
+
           {task.tags.map((tag) => (
             <Badge key={tag} variant="secondary" className="px-1.5 py-0 text-[11px]">
               {tag}
@@ -73,11 +93,13 @@ export function TaskCardBody({
   )
 }
 
-/** A card that can be dragged within and between cells. */
-export function SortableTaskCard(props: {
-  task: Task
-  subtasks?: { done: number; total: number }
-}) {
+/**
+ * A card that can be dragged within and between cells, and opens on click or
+ * Enter. No drag/click disambiguation is needed here: once a pointer drag
+ * activates, dnd-kit swallows the click that ends it. Keyboard dragging starts
+ * and ends on Space only (see the board's sensor), which leaves Enter to open.
+ */
+export function SortableTaskCard({ onOpen, ...props }: TaskCardProps & { onOpen: () => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: props.task.id })
 
@@ -92,6 +114,11 @@ export function SortableTaskCard(props: {
       )}
       {...attributes}
       {...listeners}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        listeners?.onKeyDown?.(e)
+        if (e.key === "Enter" && !isDragging) onOpen()
+      }}
     >
       <TaskCardBody {...props} />
     </div>

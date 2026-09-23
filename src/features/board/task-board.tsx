@@ -27,18 +27,17 @@ import {
   cellId,
   laneOf,
   planMove,
-  STATUS_LABELS,
-  STATUSES,
   subtaskCounts,
   type CellId,
   type Lane,
   type Layout,
 } from "@/features/board/board-model"
 import { SortableTaskCard, TaskCardBody } from "@/features/board/task-card"
-import { useMoveTask } from "@/features/board/queries"
+import { useMoveTask } from "@/features/tasks/queries"
+import { STATUS_LABELS, STATUSES, waitingOn } from "@/features/tasks/task-model"
 import { errorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
-import type { Epic, Task } from "@/types/domain"
+import type { Epic, Task, TaskDependency } from "@/types/domain"
 
 const GRID = "grid grid-cols-[repeat(6,minmax(15rem,1fr))] gap-3"
 
@@ -46,15 +45,20 @@ export function TaskBoard({
   projectId,
   tasks,
   epics,
+  dependencies,
+  onOpenTask,
 }: {
   projectId: string
   tasks: Task[]
   epics: Epic[]
+  dependencies: TaskDependency[]
+  onOpenTask: (id: string) => void
 }) {
   const lanes = useMemo(() => buildLanes(epics), [epics])
   const derived = useMemo(() => buildLayout(tasks, lanes), [tasks, lanes])
   const byId = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
   const subtasks = useMemo(() => subtaskCounts(tasks), [tasks])
+  const waiting = useMemo(() => waitingOn(tasks, dependencies), [tasks, dependencies])
 
   // A working copy exists only while a drag is in flight, so cards can preview
   // their drop cell. Otherwise the board renders straight from the query cache.
@@ -66,9 +70,13 @@ export function TaskBoard({
   const move = useMoveTask(projectId)
 
   const sensors = useSensors(
-    // A small distance so a plain click stays a click once cards open an editor.
+    // A small distance so a plain click stays a click, and opens the card.
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    // Space picks up and drops; Enter is left to open the card.
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+      keyboardCodes: { start: ["Space"], end: ["Space"], cancel: ["Escape"] },
+    }),
   )
 
   const containerOf = (id: string, l: Layout): CellId | undefined =>
@@ -183,6 +191,8 @@ export function TaskBoard({
               layout={layout}
               byId={byId}
               subtasks={subtasks}
+              waiting={waiting}
+              onOpenTask={onOpenTask}
               collapsed={collapsed.has(lane.id)}
               onToggle={() => toggle(lane.id)}
             />
@@ -195,6 +205,7 @@ export function TaskBoard({
           <TaskCardBody
             task={active}
             subtasks={subtasks.get(active.id)}
+            waitingOn={waiting.get(active.id)}
             className="rotate-1 shadow-lg ring-1 ring-primary/60"
           />
         )}
@@ -208,6 +219,8 @@ function Swimlane({
   layout,
   byId,
   subtasks,
+  waiting,
+  onOpenTask,
   collapsed,
   onToggle,
 }: {
@@ -215,6 +228,8 @@ function Swimlane({
   layout: Layout
   byId: Map<string, Task>
   subtasks: Map<string, { done: number; total: number }>
+  waiting: Map<string, Task[]>
+  onOpenTask: (id: string) => void
   collapsed: boolean
   onToggle: () => void
 }) {
@@ -256,6 +271,8 @@ function Swimlane({
                         key={taskId}
                         task={task}
                         subtasks={subtasks.get(taskId)}
+                        waitingOn={waiting.get(taskId)}
+                        onOpen={() => onOpenTask(taskId)}
                       />
                     )
                   )

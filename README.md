@@ -23,9 +23,10 @@ src/
     layout/       app shell: app-sidebar, nav-*, site-header, theme-toggle
   features/       one folder per domain area, self-contained
     estimates/    totals.ts + pdf/EstimateDocument.tsx
-    tasks/        a project's tasks and epics — the data every task view shares
-    board/        custom kanban: board-model.ts (pure ordering), task-board, queries
-    gantt/        SVAR Gantt: adapter (dates, link types), project-gantt, queries
+    tasks/        tasks, epics, dependencies and every task write (queries.ts),
+                  task-model.ts (waiting-on, cycles, positions), the task sheet
+    board/        custom kanban: board-model.ts (cells, drops), task-board, task-card
+    gantt/        SVAR Gantt: adapter (dates, link types), project-gantt
     docs/         SVAR File Manager adapter
   routes/         TanStack file-based routes; each renders its own <SiteHeader />
                   and <PageBody> (`flush` for the board and Gantt, which scroll
@@ -109,7 +110,7 @@ npm run test:tz   # the same suite under three timezones — date code must not
 ```
 
 Tests cover pure logic and vendor contracts, not rendering: board ordering and
-rebalancing, and the Gantt adapter. Every Gantt fixture is also fed through
+rebalancing, task rules (waiting-on, cycles, positions), and the Gantt adapter. Every Gantt fixture is also fed through
 SVAR's own store, because an adapter that type-checks is not proof SVAR accepts
 its output — that gap once shipped a crash.
 

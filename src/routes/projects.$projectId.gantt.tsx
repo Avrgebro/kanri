@@ -3,9 +3,12 @@ import { createFileRoute } from "@tanstack/react-router"
 import { EmptyState } from "@/components/layout/empty-state"
 import { PageBody } from "@/components/layout/page-body"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useProjectEpics, useProjectTasks } from "@/features/tasks/queries"
 import { ProjectGantt } from "@/features/gantt/project-gantt"
-import { useProjectDependencies } from "@/features/gantt/queries"
+import {
+  useProjectDependencies,
+  useProjectEpics,
+  useProjectTasks,
+} from "@/features/tasks/queries"
 import { errorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/projects/$projectId/gantt")({ component: GanttRoute })
