@@ -4,6 +4,7 @@ import type { Icon } from "@tabler/icons-react"
 import {
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -30,11 +31,12 @@ export function useIsActive() {
   return (item: NavItem) => Boolean(matchRoute({ to: item.to, fuzzy: !item.exact }))
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
+export function NavMain({ items, label }: { items: NavItem[]; label?: string }) {
   const isActive = useIsActive()
 
   return (
     <SidebarGroup>
+      {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) => (

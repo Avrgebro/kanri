@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--background:#0a0a0a;--foreground:#fafafa;--muted:#232323;--muted-foreground:#a1a1a1;--primary:#aff33e;--primary-foreground:#000;--border:rgba(255,255,255,0.1)}
+body{margin:0;background:#050505;color:var(--foreground);font-family:Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:var(--foreground)}a:hover{color:var(--primary)}
+</style>
+</helmet>
+<section data-screen-label="Turn 1 — Shell" style="padding:64px;display:flex;flex-direction:column;gap:56px;width:2744px;box-sizing:border-box">
+  <div style="display:grid;grid-template-columns:420px repeat(3,minmax(0,1fr));gap:48px;align-items:start">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span style="font:500 12px 'JetBrains Mono',monospace;color:var(--muted-foreground)">kanri · app shell</span>
+      <h1 style="margin:0;font-size:40px;font-weight:600;letter-spacing:-0.03em;line-height:1.05">Two shapes for two scopes, one bar of chrome.</h1>
+      <p style="margin:0;font-size:16px;line-height:1.55;color:var(--muted-foreground);text-wrap:pretty">A vertical list is always the app. A horizontal capsule is always the project. The only chrome above a widget is a single 44px bar.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:1.55;color:var(--muted-foreground)">
+      <div style="font-size:13px;font-weight:600;color:var(--foreground);text-transform:uppercase;letter-spacing:0.06em">Where each need lives</div>
+      <p style="margin:0"><b style="color:var(--foreground)">App nav → sidebar.</b> Five fixed items, same list on every route; it never gains project children, so it never reflows. Collapses to a 48px rail (⌘B); the choice persists and is never changed automatically.</p>
+      <p style="margin:0"><b style="color:var(--foreground)">Project nav → capsule in the top bar.</b> The project name and its four views sit inside one bordered group. The name is the scope and the tabs belong to it. Rows vs. segmented pills is the difference, not colour.</p>
+      <p style="margin:0"><b style="color:var(--foreground)">Switching → the name is the switcher.</b> Clicking the name (or ⌘P) opens a searchable list of recent and active projects. The switcher keeps your current view, so Board opens Board. It works the same whether the sidebar is collapsed or not.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:1.55;color:var(--muted-foreground)">
+      <div style="font-size:13px;font-weight:600;color:var(--foreground);text-transform:uppercase;letter-spacing:0.06em">Rules the bar follows</div>
+      <p style="margin:0"><b style="color:var(--foreground)">Outside a project</b> the capsule is replaced by the page title in the same slot. No greyed-out tabs, no "select a project" placeholder, and the bar keeps its height.</p>
+      <p style="margin:0"><b style="color:var(--foreground)">Primary action</b> always sits at the far right of the bar, and there is only one per route. Secondary actions (Edit project, Open estimate, Archive) go in the ⋯ menu beside it.</p>
+      <p style="margin:0"><b style="color:var(--foreground)">Lime marks exact location + the one action.</b> Inside a project the active view tab is lime; sidebar "Projects" drops to neutral accent as the ancestor. On Estimates, the sidebar item is lime.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;font-size:15px;line-height:1.55;color:var(--muted-foreground)">
+      <div style="font-size:13px;font-weight:600;color:var(--foreground);text-transform:uppercase;letter-spacing:0.06em">Trade-offs</div>
+      <p style="margin:0"><b style="color:var(--foreground)">Rejected: views nested in the sidebar.</b> It saves the 44px bar, but the sidebar would grow on project routes and shrink elsewhere, and in the collapsed rail you'd get four unlabelled icons with no project name.</p>
+      <p style="margin:0"><b style="color:var(--foreground)">Cost: 44px above the Gantt.</b> In exchange there is no page header, breadcrumb row, or tab strip. Title, scope, views, search and action all share that one bar. At 1280×800 the widget gets 756px.</p>
+      <p style="margin:0"><b style="color:var(--foreground)">Widgets own their area.</b> Board, Gantt and Docs render edge-to-edge with no padding, and the inset doesn't scroll. Turn off SVAR's own "add" button so it doesn't duplicate the shell's.</p>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:56px 48px">
+    <div id="1a" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--primary);color:var(--primary-foreground)">1a</span><span style="font-size:18px;font-weight:600">Panel view</span><span style="font-size:14px;color:var(--muted-foreground)">Padded, max-width content; the inset scrolls vertically.</span></div>
+      <dc-import name="Shell" view="panel" hint-size="1280px,800px"></dc-import>
+    </div>
+    <div id="1b" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--primary);color:var(--primary-foreground)">1b</span><span style="font-size:18px;font-weight:600">Board view</span><span style="font-size:14px;color:var(--muted-foreground)">Same bar, same sidebar. Content goes edge-to-edge and the widget scrolls itself.</span></div>
+      <dc-import name="Shell" view="board" hint-size="1280px,800px"></dc-import>
+    </div>
+    <div id="1c" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--muted)">1c</span><span style="font-size:18px;font-weight:600">Collapsed rail · Gantt</span><span style="font-size:14px;color:var(--muted-foreground)">48px rail. Project context stays in the bar, so nothing is lost.</span></div>
+      <dc-import name="Shell" view="gantt" collapsed="{{ true }}" hint-size="1280px,800px"></dc-import>
+    </div>
+    <div id="1d" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--muted)">1d</span><span style="font-size:18px;font-weight:600">Project switching</span><span style="font-size:14px;color:var(--muted-foreground)">Click the project name or press ⌘P. Recent projects get ⌘1–3.</span></div>
+      <dc-import name="Shell" view="board" switcher="{{ true }}" collapsed="{{ true }}" hint-size="1280px,800px"></dc-import>
+    </div>
+    <div id="1e" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--muted)">1e</span><span style="font-size:18px;font-weight:600">Outside a project · Estimates</span><span style="font-size:14px;color:var(--muted-foreground)">The capsule is replaced by the page title; the bar height doesn't change.</span></div>
+      <dc-import name="Shell" view="estimates" hint-size="1280px,800px"></dc-import>
+    </div>
+    <div id="1f" style="display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:baseline;gap:12px"><span style="font:600 12px 'JetBrains Mono',monospace;padding:3px 8px;border-radius:6px;background:var(--muted)">1f</span><span style="font-size:18px;font-weight:600">Narrow · 820px</span><span style="font-size:14px;color:var(--muted-foreground)">Under 1024px the sidebar opens as a sheet and tabs become icon-only. Under 640px the tabs become a select.</span></div>
+      <dc-import name="Shell" view="board" narrow="{{ true }}" width="{{ 820 }}" hint-size="820px,800px"></dc-import>
+    </div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>
