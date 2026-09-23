@@ -1,12 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 
 import { supabase } from "@/lib/supabase"
-import type { Project, ProjectStatus } from "@/types/domain"
+import type { Tables, TablesInsert, TablesUpdate } from "@/types/database"
 
-/** A project plus the client name, which the list always wants. */
-export interface ProjectRow extends Project {
-  clients: { id: string; name: string } | null
+/** A project plus the client name, which every project screen wants. */
+export type ProjectRow = Tables<"projects"> & {
+  clients: Pick<Tables<"clients">, "id" | "name"> | null
 }
+
+/** owner_id is set by the database default (auth.uid()) — never sent. */
+export type ProjectInput = Omit<
+  TablesInsert<"projects">,
+  "id" | "owner_id" | "created_at" | "updated_at"
+>
+
+const SELECT = "*, clients(id, name)"
 
 export const projectKeys = {
   all: ["projects"] as const,
@@ -16,13 +24,13 @@ export const projectKeys = {
 export function useProjects() {
   return useQuery({
     queryKey: projectKeys.all,
-    queryFn: async (): Promise<ProjectRow[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, clients(id, name)")
+        .select(SELECT)
         .order("created_at", { ascending: false })
       if (error) throw error
-      return data as ProjectRow[]
+      return data
     },
   })
 }
@@ -30,39 +38,29 @@ export function useProjects() {
 export function useProject(id: string) {
   return useQuery({
     queryKey: projectKeys.detail(id),
-    // The sidebar calls this on every route; only run it inside a project.
-    enabled: Boolean(id),
-    queryFn: async (): Promise<ProjectRow> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("projects")
-        .select("*, clients(id, name)")
+        .select(SELECT)
         .eq("id", id)
         .single()
       if (error) throw error
-      return data as ProjectRow
+      return data
     },
   })
-}
-
-export interface ProjectInput {
-  name: string
-  client_id: string | null
-  status: ProjectStatus
-  description: string | null
 }
 
 export function useCreateProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (input: ProjectInput): Promise<ProjectRow> => {
-      // owner_id defaults to auth.uid() in the database — never sent from here.
+    mutationFn: async (input: ProjectInput) => {
       const { data, error } = await supabase
         .from("projects")
         .insert(input)
-        .select("*, clients(id, name)")
+        .select(SELECT)
         .single()
       if (error) throw error
-      return data as ProjectRow
+      return data
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: projectKeys.all }),
   })
@@ -71,15 +69,18 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, ...input }: Partial<ProjectInput> & { id: string }) => {
+    mutationFn: async ({
+      id,
+      ...input
+    }: TablesUpdate<"projects"> & { id: string }) => {
       const { data, error } = await supabase
         .from("projects")
         .update(input)
         .eq("id", id)
-        .select("*, clients(id, name)")
+        .select(SELECT)
         .single()
       if (error) throw error
-      return data as ProjectRow
+      return data
     },
     onSuccess: (row) => {
       qc.invalidateQueries({ queryKey: projectKeys.all })

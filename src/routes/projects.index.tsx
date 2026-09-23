@@ -1,12 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { IconPlus } from "@tabler/icons-react"
 
+import { EmptyState } from "@/components/layout/empty-state"
+import { PageBody } from "@/components/layout/page-body"
+import { PageTitle } from "@/components/layout/page-title"
 import { SiteHeader } from "@/components/layout/site-header"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ProjectFormDialog } from "@/features/projects/project-form-dialog"
+import { NewProjectButton } from "@/features/projects/new-project-button"
 import { ProjectStatusBadge } from "@/features/projects/project-status"
 import { useProjects } from "@/features/projects/queries"
+import { errorMessage } from "@/lib/errors"
 
 export const Route = createFileRoute("/projects/")({ component: ProjectList })
 
@@ -16,20 +18,11 @@ function ProjectList() {
   return (
     <>
       <SiteHeader
-        title="Projects"
-        actions={
-          <ProjectFormDialog
-            trigger={
-              <Button size="sm" className="gap-1.5 font-semibold">
-                <IconPlus className="size-4" />
-                New project
-              </Button>
-            }
-          />
-        }
+        title={<PageTitle>Projects</PageTitle>}
+        actions={<NewProjectButton />}
       />
 
-      <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
+      <PageBody>
         {isLoading && (
           <div className="grid gap-3">
             {[0, 1, 2].map((i) => (
@@ -40,27 +33,16 @@ function ProjectList() {
 
         {error && (
           <p className="text-sm text-destructive">
-            Could not load projects: {error.message}
+            Could not load projects: {errorMessage(error)}
           </p>
         )}
 
-        {data && data.length === 0 && (
-          <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed">
-            <div className="max-w-sm px-6 py-16 text-center">
-              <p className="text-sm font-medium">No projects yet</p>
-              <p className="mt-1 mb-4 text-sm text-muted-foreground">
-                Accept an estimate to generate one, or create a project directly.
-              </p>
-              <ProjectFormDialog
-                trigger={
-                  <Button size="sm" variant="outline">
-                    <IconPlus />
-                    New project
-                  </Button>
-                }
-              />
-            </div>
-          </div>
+        {data?.length === 0 && (
+          <EmptyState
+            title="No projects yet"
+            description="Accept an estimate to generate one, or create a project directly."
+            action={<NewProjectButton variant="outline" />}
+          />
         )}
 
         {data && data.length > 0 && (
@@ -86,7 +68,7 @@ function ProjectList() {
             ))}
           </div>
         )}
-      </div>
+      </PageBody>
     </>
   )
 }

@@ -1,15 +1,18 @@
 import { Badge } from "@/components/ui/badge"
 import type { ProjectStatus } from "@/types/domain"
 
-export const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
-  { value: "active", label: "Active" },
-  { value: "on_hold", label: "On hold" },
-  { value: "completed", label: "Completed" },
-  { value: "archived", label: "Archived" },
-]
+/** Exhaustive by type: adding a ProjectStatus without a label is a compile error. */
+const LABELS: Record<ProjectStatus, string> = {
+  active: "Active",
+  on_hold: "On hold",
+  completed: "Completed",
+  archived: "Archived",
+}
 
-const label = (s: ProjectStatus) =>
-  PROJECT_STATUSES.find((x) => x.value === s)?.label ?? s
+export const PROJECT_STATUSES = Object.entries(LABELS).map(([value, label]) => ({
+  value: value as ProjectStatus,
+  label,
+}))
 
 /** Only `active` gets the lime; the rest stay quiet so the list scans well. */
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
@@ -18,7 +21,7 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
       variant={status === "active" ? "default" : "secondary"}
       className={status === "archived" ? "opacity-60" : undefined}
     >
-      {label(status)}
+      {LABELS[status]}
     </Badge>
   )
 }

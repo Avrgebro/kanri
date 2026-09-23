@@ -13,6 +13,8 @@ import { ProjectFormDialog } from "@/features/projects/project-form-dialog"
 import { useUpdateProject, type ProjectRow } from "@/features/projects/queries"
 import { toast } from "sonner"
 
+import { errorMessage } from "@/lib/errors"
+
 export function ProjectMenu({ project }: { project: ProjectRow }) {
   const [editing, setEditing] = useState(false)
   const update = useUpdateProject()
@@ -22,7 +24,7 @@ export function ProjectMenu({ project }: { project: ProjectRow }) {
       await update.mutateAsync({ id: project.id, status: "archived" })
       toast.success("Project archived")
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not archive")
+      toast.error(errorMessage(err, "Could not archive"))
     }
   }
 

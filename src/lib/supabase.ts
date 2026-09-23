@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js"
 
+import type { Database } from "@/types/database"
+
 const url = import.meta.env.VITE_SUPABASE_URL
 const key = import.meta.env.VITE_SUPABASE_ANON_KEY
 
@@ -16,7 +18,7 @@ if (!url || !key) {
  * (`owner_id = auth.uid()` on every table) is what actually protects the data.
  * The service role key must never appear in this app.
  */
-export const supabase = createClient(url, key, {
+export const supabase = createClient<Database>(url, key, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

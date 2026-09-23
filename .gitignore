@@ -28,3 +28,8 @@ dist-ssr
 .env.local
 .env*.local
 .env.production
+
+# Generated design-tool output. The .tsx mockups are the reviewable artifact;
+# support.js is a build bundle whose source is not in this repo.
+docs/mockups/support.js
+docs/mockups/*.dc.html
