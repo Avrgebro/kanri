@@ -8,6 +8,7 @@ import {
   IconUsers,
 } from "@tabler/icons-react"
 
+import lockup from "@/assets/brand/kanri-lockup-horizontal.svg"
 import { NavMain, type NavItem } from "@/components/layout/nav-main"
 import { NavSecondary } from "@/components/layout/nav-secondary"
 import { NavUser } from "@/components/layout/nav-user"
@@ -43,7 +44,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link to="/">
-                <span className="text-base font-semibold tracking-tight">kanri</span>
+                {/* 24px tall: the regular mark's minimum size (docs/brand). */}
+                <img src={lockup} alt="kanri" className="h-6 w-auto" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
