@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import {
   dependents,
+  describeDue,
+  dueState,
   endOfGroup,
   nextSubtaskPosition,
   waitingOn,
@@ -75,5 +77,30 @@ describe("positions", () => {
     const tasks = [task("p"), task("s", { parent_id: "p", position: 2048 })]
     expect(nextSubtaskPosition(tasks, "p")).toBe(3072)
     expect(nextSubtaskPosition(tasks, "s")).toBe(1024)
+  })
+})
+
+describe("dueState", () => {
+  const today = new Date(2026, 8, 23, 15, 30) // mid-afternoon: time of day must not count
+
+  it("is overdue from the day after the due date", () => {
+    expect(dueState(task("t", { due_date: "2026-09-18" }), today)).toEqual({ kind: "overdue", days: 5 })
+    expect(dueState(task("t", { due_date: "2026-09-23" }), today)).toEqual({ kind: "soon", days: 0 })
+  })
+
+  it("is soon within a week, and nothing beyond", () => {
+    expect(dueState(task("t", { due_date: "2026-09-30" }), today)).toEqual({ kind: "soon", days: 7 })
+    expect(dueState(task("t", { due_date: "2026-10-01" }), today)).toBeNull()
+  })
+
+  it("never warns for a done or undated task", () => {
+    expect(dueState(task("t", { due_date: "2026-09-01", status: "done" }), today)).toBeNull()
+    expect(dueState(task("t"), today)).toBeNull()
+  })
+
+  it("reads naturally", () => {
+    expect(describeDue({ kind: "overdue", days: 1 })).toBe("1 day overdue")
+    expect(describeDue({ kind: "soon", days: 0 })).toBe("today")
+    expect(describeDue({ kind: "soon", days: 3 })).toBe("in 3 days")
   })
 })

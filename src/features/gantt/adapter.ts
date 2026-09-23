@@ -1,5 +1,6 @@
 import type { ILink, ITask } from "@svar-ui/react-gantt"
 
+import { addDays, formatDay, parseDay, shortDate } from "@/lib/dates"
 import type { DependencyType, Epic, Task } from "@/types/domain"
 
 /**
@@ -29,29 +30,6 @@ export const toDependencyType = (t: TLinkType) => FROM_SVAR[t]
 // ---------------------------------------------------------------- dates
 
 /**
- * `date` columns are calendar days with no timezone. Parse and format them
- * from local parts: `new Date("2026-09-23")` is UTC midnight, which lands on
- * the previous day anywhere west of Greenwich.
- */
-export function parseDay(day: string): Date {
-  const [y, m, d] = day.split("-").map(Number)
-  return new Date(y, m - 1, d)
-}
-
-export function formatDay(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, "0")
-  const d = String(date.getDate()).padStart(2, "0")
-  return `${y}-${m}-${d}`
-}
-
-const addDays = (date: Date, n: number) => {
-  const next = new Date(date)
-  next.setDate(next.getDate() + n)
-  return next
-}
-
-/**
  * Our `due_date` is the last day of the task (inclusive); SVAR's `end` is the
  * moment it ends (exclusive). A task due on the 5th therefore ends on the 6th.
  * A task with only one of the two dates shows as a one-day bar on that day.
@@ -63,10 +41,8 @@ function taskRange(t: Task): { start: Date; end: Date } | null {
   return { start: parseDay(first), end: addDays(parseDay(last), 1) }
 }
 
-const SHORT = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" })
-
 /** Grid cell text for a start date. */
-export const formatStart = (start?: Date) => (start ? SHORT.format(start) : "")
+export const formatStart = (start?: Date) => (start ? shortDate(start) : "")
 
 /** Inverse of `taskRange`: what to write back after a drag or resize. */
 export function toTaskDates(start: Date, end: Date) {

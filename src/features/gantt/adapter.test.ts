@@ -2,14 +2,13 @@ import { DataStore } from "@svar-ui/gantt-store"
 import { describe, expect, it } from "vitest"
 
 import {
-  formatDay,
   formatStart,
-  parseDay,
   toDependencyType,
   toGanttData,
   toTaskDates,
   type GanttData,
 } from "@/features/gantt/adapter"
+import { formatDay, parseDay } from "@/lib/dates"
 import type { DependencyType, Epic, Task } from "@/types/domain"
 
 const task = (id: string, over: Partial<Task> = {}) =>

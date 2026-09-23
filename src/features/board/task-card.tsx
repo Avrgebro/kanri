@@ -3,19 +3,10 @@ import { CSS } from "@dnd-kit/utilities"
 import { IconAlignLeft, IconCalendar, IconHourglass, IconSubtask } from "@tabler/icons-react"
 
 import { Badge } from "@/components/ui/badge"
+import { dueState } from "@/features/tasks/task-model"
+import { parseDay, shortDate } from "@/lib/dates"
 import { cn } from "@/lib/utils"
 import type { Task } from "@/types/domain"
-
-const fmtDate = (d: string) =>
-  new Date(`${d}T00:00:00`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  })
-
-const isOverdue = (task: Task) =>
-  task.due_date !== null &&
-  task.status !== "done" &&
-  new Date(`${task.due_date}T23:59:59`) < new Date()
 
 export interface TaskCardProps {
   task: Task
@@ -30,7 +21,7 @@ export function TaskCardBody({
   waitingOn,
   className,
 }: TaskCardProps & { className?: string }) {
-  const overdue = isOverdue(task)
+  const overdue = dueState(task, new Date())?.kind === "overdue"
   const hasDescription = Boolean(task.description?.trim())
   const hasMeta = task.due_date || subtasks || hasDescription || task.tags.length > 0
 
@@ -67,7 +58,7 @@ export function TaskCardBody({
               )}
             >
               <IconCalendar className="size-3.5" />
-              {fmtDate(task.due_date)}
+              {shortDate(parseDay(task.due_date))}
             </span>
           )}
 

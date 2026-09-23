@@ -1,12 +1,23 @@
-import { useMemo, useState, type KeyboardEvent, type ReactNode } from "react"
-import { IconHourglass, IconX } from "@tabler/icons-react"
+import { useMemo, useState } from "react"
+import {
+  IconAlertTriangle,
+  IconArrowRight,
+  IconCalendar,
+  IconCircleCheckFilled,
+  IconCircleHalf2,
+  IconClockHour4,
+  IconCloudCheck,
+  IconColumns3,
+  IconCornerLeftUp,
+  IconLoader2,
+  IconLock,
+  IconStack2,
+  IconTag,
+  IconX,
+} from "@tabler/icons-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
@@ -15,25 +26,45 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Textarea } from "@/components/ui/textarea"
 import {
-  useAddDependency,
-  useCreateSubtask,
-  useDeleteDependency,
-  useDeleteTask,
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import {
   useMoveTask,
+  useSaveState,
   useUpdateTask,
+  type SaveState,
   type TaskFields,
 } from "@/features/tasks/queries"
 import {
-  dependents,
+  DateField,
+  DescriptionField,
+  DueHint,
+  EstimateField,
+  ghost,
+  Property,
+  TagsField,
+  TitleField,
+} from "@/features/tasks/task-sheet-fields"
+import {
+  DeleteSubtask,
+  Dependencies,
+  Subtasks,
+  WaitingNotice,
+} from "@/features/tasks/task-sheet-relations"
+import {
+  dueState,
   endOfGroup,
-  nextSubtaskPosition,
   STATUS_LABELS,
   STATUSES,
   waitingOn,
 } from "@/features/tasks/task-model"
+import { StatusIcon } from "@/features/tasks/task-status"
+import { shortDate } from "@/lib/dates"
 import { errorMessage } from "@/lib/errors"
 import { cn } from "@/lib/utils"
 import type { Epic, Task, TaskDependency, TaskStatus } from "@/types/domain"
@@ -43,6 +74,8 @@ const NO_EPIC = "__none__"
 
 interface TaskSheetProps {
   projectId: string
+  /** Shown in the top bar of a top-level task, for context. */
+  projectName: string
   tasks: Task[]
   epics: Epic[]
   dependencies: TaskDependency[]
@@ -55,7 +88,8 @@ interface TaskSheetProps {
 
 /**
  * Everything about one task. Fields save as they are committed — on blur for
- * text, on change for pickers — so there is no Save button to forget.
+ * text, on pick for the rest — so there is no Save button to forget; the top
+ * bar says whether the last write landed.
  */
 export function TaskSheet({ taskId, onClose, ...props }: TaskSheetProps) {
   // Closing clears `taskId` at once, but the sheet still slides out for a
@@ -68,7 +102,7 @@ export function TaskSheet({ taskId, onClose, ...props }: TaskSheetProps) {
 
   return (
     <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
-      <SheetContent className="w-full gap-0 overflow-y-auto sm:max-w-lg">
+      <SheetContent showCloseButton={false} className="w-full gap-0 sm:max-w-lg">
         {/* Keyed so drafts reset when the sheet switches to another task. */}
         {shown && <TaskDetail key={shown.id} task={shown} {...props} />}
       </SheetContent>
@@ -79,6 +113,7 @@ export function TaskSheet({ taskId, onClose, ...props }: TaskSheetProps) {
 function TaskDetail({
   task,
   projectId,
+  projectName,
   tasks,
   epics,
   dependencies,
@@ -87,6 +122,12 @@ function TaskDetail({
   const move = useMoveTask(projectId)
   const update = useUpdateTask(projectId)
   const parent = task.parent_id ? tasks.find((t) => t.id === task.parent_id) : undefined
+  const epic = epics.find((e) => e.id === task.epic_id)
+  const due = dueState(task, new Date())
+  const waiting = useMemo(
+    () => waitingOn(tasks, dependencies).get(task.id) ?? [],
+    [tasks, dependencies, task.id],
+  )
 
   const save = (fields: TaskFields) =>
     update.mutate(
@@ -107,91 +148,156 @@ function TaskDetail({
 
   return (
     <>
-      <SheetHeader className="gap-3 border-b pr-12">
-        {parent && (
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b pr-3 pl-5">
+        {parent ? (
           <button
             onClick={() => onOpenTask(parent.id)}
-            className="truncate text-left text-xs text-muted-foreground hover:text-foreground"
+            className="-ml-1.5 flex h-7 min-w-0 items-center gap-1.5 rounded-md pr-2 pl-1.5 text-[13px] text-muted-foreground hover:bg-input/50 hover:text-foreground"
           >
-            Subtask of {parent.title}
+            <IconCornerLeftUp className="size-3.5 shrink-0" />
+            <span className="shrink-0">Subtask of</span>
+            <span className="truncate font-medium text-foreground">{parent.title}</span>
           </button>
+        ) : (
+          <span className="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
+            <IconColumns3 className="size-3.5 shrink-0" />
+            <span className="truncate">{projectName}</span>
+          </span>
         )}
+        <div className="flex-1" />
+        <SaveIndicator projectId={projectId} />
+        <Separator orientation="vertical" className="mx-1 h-4!" />
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" title="Close (Esc)" className="size-8">
+            <IconX />
+            <span className="sr-only">Close</span>
+          </Button>
+        </SheetClose>
+      </header>
+
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 pt-5 pb-7">
         {/* Radix requires a title; the visible one is the editable field. */}
         <SheetTitle className="sr-only">{task.title}</SheetTitle>
         <SheetDescription className="sr-only">Task details</SheetDescription>
-        <TitleField task={task} onSave={(title) => save({ title })} />
 
-        <div className="grid grid-cols-2 gap-3">
-          <Select value={task.status} onValueChange={(s) => moveTo(s as TaskStatus, task.epic_id)}>
-            <SelectTrigger aria-label="Status" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {STATUS_LABELS[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* A subtask's epic follows its parent, so it is not chosen here. */}
-          <Select
-            value={task.epic_id ?? NO_EPIC}
-            onValueChange={(e) => moveTo(task.status, e === NO_EPIC ? null : e)}
-            disabled={Boolean(task.parent_id)}
-          >
-            <SelectTrigger aria-label="Epic" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NO_EPIC}>No epic</SelectItem>
-              {epics.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col gap-2.5">
+          <TitleField task={task} onSave={(title) => save({ title })} />
+          {task.status === "done" && (
+            <div className="flex items-center gap-2.5 rounded-lg border border-chart-3/30 bg-chart-3/12 py-2 pr-2 pl-3">
+              <IconCircleCheckFilled className="size-4 shrink-0 text-chart-3" />
+              <span className="flex-1 text-[13px]">
+                Done{task.completed_at && ` on ${shortDate(new Date(task.completed_at))}`}. Due
+                dates and dependencies no longer raise warnings.
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7"
+                onClick={() => moveTo("todo", task.epic_id)}
+              >
+                Reopen
+              </Button>
+            </div>
+          )}
         </div>
-      </SheetHeader>
 
-      <div className="grid gap-6 p-4">
-        <WaitingNotice task={task} tasks={tasks} dependencies={dependencies} onOpenTask={onOpenTask} />
+        <WaitingNotice waiting={waiting} onOpenTask={onOpenTask} />
 
-        <Field label="Description" htmlFor="task-description">
-          <DescriptionField task={task} onSave={(description) => save({ description })} />
-        </Field>
+        <div className="grid grid-cols-[104px_minmax(0,1fr)] items-start gap-x-2 gap-y-1">
+          <Property icon={IconCircleHalf2} label="Status">
+            <Select value={task.status} onValueChange={(s) => moveTo(s as TaskStatus, task.epic_id)}>
+              <SelectTrigger aria-label="Status" className="h-8! w-fit gap-2 px-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUSES.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    <StatusIcon status={s} />
+                    {STATUS_LABELS[s]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {task.status === "blocked" && (
+              <span className="px-2 pb-1 text-xs text-muted-foreground">
+                Set by hand. Something outside the project is holding this up.
+              </span>
+            )}
+          </Property>
 
-        <div className="grid grid-cols-3 gap-3">
-          <Field label="Start" htmlFor="task-start">
-            <Input
-              id="task-start"
-              type="date"
-              value={task.start_date ?? ""}
-              max={task.due_date ?? undefined}
-              onChange={(e) => save({ start_date: e.target.value || null })}
-            />
-          </Field>
-          <Field label="Due" htmlFor="task-due">
-            <Input
-              id="task-due"
-              type="date"
-              value={task.due_date ?? ""}
-              min={task.start_date ?? undefined}
-              onChange={(e) => save({ due_date: e.target.value || null })}
-            />
-          </Field>
-          <Field label="Estimate (h)" htmlFor="task-estimate">
+          <Property icon={IconStack2} label="Epic">
+            {parent ? (
+              // A subtask's epic is its parent's; the schema keeps it so.
+              <span
+                title="A subtask's epic follows its parent"
+                className="flex h-8 items-center gap-2 px-2 text-sm"
+              >
+                <EpicDot epic={epic} />
+                {epic?.name ?? "No epic"}
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <IconLock className="size-3" />
+                  follows parent
+                </span>
+              </span>
+            ) : (
+              <Select
+                value={task.epic_id ?? NO_EPIC}
+                onValueChange={(e) => moveTo(task.status, e === NO_EPIC ? null : e)}
+              >
+                <SelectTrigger
+                  aria-label="Epic"
+                  className={cn(ghost, "h-8! w-fit gap-2", !epic && "text-muted-foreground")}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_EPIC}>
+                    <EpicDot />
+                    No epic
+                  </SelectItem>
+                  {epics.map((e) => (
+                    <SelectItem key={e.id} value={e.id}>
+                      <EpicDot epic={e} />
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </Property>
+
+          <Property icon={IconCalendar} label="Dates">
+            <div className="flex flex-wrap items-center gap-1">
+              <DateField
+                label="Start date"
+                value={task.start_date}
+                max={task.due_date}
+                onChange={(start_date) => save({ start_date })}
+              />
+              <IconArrowRight className="size-3.5 text-muted-foreground" />
+              <DateField
+                label="Due date"
+                value={task.due_date}
+                min={task.start_date}
+                due={due}
+                onChange={(due_date) => save({ due_date })}
+              />
+              {due && <DueHint due={due} />}
+            </div>
+          </Property>
+
+          <Property icon={IconClockHour4} label="Estimate">
             <EstimateField task={task} onSave={(estimate_hours) => save({ estimate_hours })} />
-          </Field>
+          </Property>
+
+          <Property icon={IconTag} label="Tags">
+            <TagsField task={task} onSave={(tags) => save({ tags })} />
+          </Property>
         </div>
 
-        <Field label="Tags" htmlFor="task-tags">
-          <TagsField task={task} onSave={(tags) => save({ tags })} />
-        </Field>
+        <DescriptionField task={task} onSave={(description) => save({ description })} />
 
-        {!task.parent_id && (
+        {!parent && (
           <>
             <Separator />
             <Subtasks projectId={projectId} task={task} tasks={tasks} onOpenTask={onOpenTask} />
@@ -222,388 +328,34 @@ function TaskDetail({
   )
 }
 
-function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
-  return (
-    <div className="grid content-start gap-2">
-      <Label htmlFor={htmlFor} className="text-xs text-muted-foreground">
-        {label}
-      </Label>
-      {children}
-    </div>
+/** An epic's colour; hollow for "No epic". */
+function EpicDot({ epic }: { epic?: Epic }) {
+  return epic ? (
+    <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: epic.color }} />
+  ) : (
+    <span className="size-2 shrink-0 rounded-full border border-dashed border-muted-foreground" />
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="grid gap-3">
-      <h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
-      {children}
-    </section>
-  )
+const SAVE_STATE: Record<
+  SaveState,
+  { icon: typeof IconCloudCheck; label: string; className: string }
+> = {
+  saved: { icon: IconCloudCheck, label: "Saved", className: "text-muted-foreground" },
+  saving: {
+    icon: IconLoader2,
+    label: "Saving…",
+    className: "text-muted-foreground [&>svg]:animate-spin",
+  },
+  failed: { icon: IconAlertTriangle, label: "Not saved", className: "font-medium text-foreground" },
 }
 
-/** Enter commits a single-line draft by blurring it, which saves. */
-const blurOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-  if (e.key === "Enter") e.currentTarget.blur()
-}
-
-// ---------------------------------------------------------------- fields
-
-function TitleField({ task, onSave }: { task: Task; onSave: (title: string) => void }) {
-  const [draft, setDraft] = useState(task.title)
+function SaveIndicator({ projectId }: { projectId: string }) {
+  const { icon: Glyph, label, className } = SAVE_STATE[useSaveState(projectId)]
   return (
-    <Input
-      aria-label="Title"
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onKeyDown={blurOnEnter}
-      onBlur={() => {
-        const title = draft.trim()
-        // A task always has a title; clearing it puts the old one back.
-        if (!title) setDraft(task.title)
-        else if (title !== task.title) onSave(title)
-      }}
-      className="h-auto border-transparent px-2 py-1 text-lg font-semibold shadow-none md:text-lg dark:bg-transparent"
-    />
-  )
-}
-
-function DescriptionField({
-  task,
-  onSave,
-}: {
-  task: Task
-  onSave: (description: string | null) => void
-}) {
-  const [draft, setDraft] = useState(task.description ?? "")
-  return (
-    <Textarea
-      id="task-description"
-      rows={4}
-      value={draft}
-      placeholder="Notes, links, acceptance criteria…"
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={() => {
-        const description = draft.trim() || null
-        if (description !== task.description) onSave(description)
-      }}
-    />
-  )
-}
-
-function EstimateField({
-  task,
-  onSave,
-}: {
-  task: Task
-  onSave: (hours: number | null) => void
-}) {
-  const [draft, setDraft] = useState(task.estimate_hours?.toString() ?? "")
-  return (
-    <Input
-      id="task-estimate"
-      type="number"
-      inputMode="decimal"
-      min={0}
-      step={0.5}
-      value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onKeyDown={blurOnEnter}
-      onBlur={() => {
-        const hours = draft.trim() === "" ? null : Number(draft)
-        if (hours !== null && (Number.isNaN(hours) || hours < 0)) {
-          setDraft(task.estimate_hours?.toString() ?? "")
-          return
-        }
-        if (hours !== task.estimate_hours) onSave(hours)
-      }}
-    />
-  )
-}
-
-function TagsField({ task, onSave }: { task: Task; onSave: (tags: string[]) => void }) {
-  const [draft, setDraft] = useState("")
-
-  function add() {
-    const tag = draft.trim()
-    setDraft("")
-    if (tag && !task.tags.includes(tag)) onSave([...task.tags, tag])
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {task.tags.map((tag) => (
-        <Badge key={tag} variant="secondary" className="gap-1 pr-1">
-          {tag}
-          <button
-            aria-label={`Remove ${tag}`}
-            onClick={() => onSave(task.tags.filter((t) => t !== tag))}
-            className="rounded-sm text-muted-foreground hover:text-foreground"
-          >
-            <IconX className="size-3" />
-          </button>
-        </Badge>
-      ))}
-      <Input
-        id="task-tags"
-        value={draft}
-        placeholder="Add a tag"
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === ",") {
-            e.preventDefault()
-            add()
-          }
-        }}
-        onBlur={add}
-        className="h-7 w-32 flex-1 text-sm"
-      />
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------- relations
-
-function TaskLink({ task, onOpenTask }: { task: Task; onOpenTask: (id: string) => void }) {
-  return (
-    <button
-      onClick={() => onOpenTask(task.id)}
-      className={cn(
-        "min-w-0 flex-1 truncate text-left text-sm hover:underline",
-        task.status === "done" && "text-muted-foreground line-through",
-      )}
-    >
-      {task.title}
-    </button>
-  )
-}
-
-function WaitingNotice({
-  task,
-  tasks,
-  dependencies,
-  onOpenTask,
-}: {
-  task: Task
-  tasks: Task[]
-  dependencies: TaskDependency[]
-  onOpenTask: (id: string) => void
-}) {
-  const waiting = useMemo(
-    () => waitingOn(tasks, dependencies).get(task.id) ?? [],
-    [tasks, dependencies, task.id],
-  )
-  if (!waiting.length) return null
-
-  return (
-    <div className="flex gap-2 rounded-lg border border-chart-5/30 bg-chart-5/10 p-3 text-sm">
-      <IconHourglass className="mt-0.5 size-4 shrink-0 text-chart-5" />
-      <div className="min-w-0 flex-1">
-        <p className="text-chart-5">Waiting on {waiting.length === 1 ? "a task" : `${waiting.length} tasks`} to finish</p>
-        <ul className="mt-1 grid gap-0.5">
-          {waiting.map((t) => (
-            <li key={t.id} className="flex">
-              <TaskLink task={t} onOpenTask={onOpenTask} />
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  )
-}
-
-function Subtasks({
-  projectId,
-  task,
-  tasks,
-  onOpenTask,
-}: {
-  projectId: string
-  task: Task
-  tasks: Task[]
-  onOpenTask: (id: string) => void
-}) {
-  const move = useMoveTask(projectId)
-  const create = useCreateSubtask(projectId)
-  const [draft, setDraft] = useState("")
-
-  const subtasks = tasks
-    .filter((t) => t.parent_id === task.id)
-    .sort((a, b) => a.position - b.position)
-  const done = subtasks.filter((t) => t.status === "done").length
-
-  function toggle(subtask: Task, checked: boolean) {
-    move(
-      // The epic is the parent's either way; the schema holds it there.
-      { taskId: subtask.id, status: checked ? "done" : "todo", epic_id: subtask.epic_id, writes: [] },
-      (err) => toast.error(errorMessage(err, "Could not update subtask")),
-    )
-  }
-
-  function add() {
-    const title = draft.trim()
-    if (!title) return
-    create.mutate(
-      { parent: task, title, position: nextSubtaskPosition(tasks, task.id) },
-      {
-        onSuccess: () => setDraft(""),
-        onError: (err) => toast.error(errorMessage(err, "Could not add subtask")),
-      },
-    )
-  }
-
-  return (
-    <Section title={subtasks.length ? `Subtasks · ${done}/${subtasks.length}` : "Subtasks"}>
-      {subtasks.length > 0 && (
-        <ul className="grid gap-2">
-          {subtasks.map((s) => (
-            <li key={s.id} className="flex items-center gap-2">
-              <Checkbox
-                aria-label={`Mark ${s.title} done`}
-                checked={s.status === "done"}
-                onCheckedChange={(checked) => toggle(s, checked === true)}
-              />
-              <TaskLink task={s} onOpenTask={onOpenTask} />
-              {s.status !== "done" && s.status !== "todo" && (
-                <span className="shrink-0 text-xs text-muted-foreground">{STATUS_LABELS[s.status]}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <Input
-        aria-label="New subtask"
-        value={draft}
-        placeholder="Add a subtask"
-        disabled={create.isPending}
-        onChange={(e) => setDraft(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && add()}
-        className="h-8 text-sm"
-      />
-    </Section>
-  )
-}
-
-function Dependencies({
-  projectId,
-  task,
-  tasks,
-  dependencies,
-  onOpenTask,
-}: {
-  projectId: string
-  task: Task
-  tasks: Task[]
-  dependencies: TaskDependency[]
-  onOpenTask: (id: string) => void
-}) {
-  const add = useAddDependency(projectId)
-  const remove = useDeleteDependency(projectId)
-  const byId = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
-
-  const dependsOn = dependencies.filter((d) => d.task_id === task.id)
-  const neededBy = dependencies.filter((d) => d.depends_on === task.id)
-
-  // Anything this task could depend on without closing a cycle: not itself,
-  // not already a predecessor, not anything downstream of it.
-  const candidates = useMemo(() => {
-    const downstream = dependents(task.id, dependencies)
-    const already = new Set(
-      dependencies.filter((d) => d.task_id === task.id).map((d) => d.depends_on),
-    )
-    return tasks
-      .filter((t) => t.id !== task.id && !already.has(t.id) && !downstream.has(t.id))
-      .sort((a, b) => a.title.localeCompare(b.title))
-  }, [tasks, dependencies, task.id])
-
-  const onRemoveError = (err: unknown) =>
-    toast.error(errorMessage(err, "Could not remove dependency"))
-
-  const row = (dep: TaskDependency, other: Task | undefined) =>
-    other && (
-      <li key={dep.id} className="flex items-center gap-2">
-        <TaskLink task={other} onOpenTask={onOpenTask} />
-        {/* Finish-to-start is the default and goes unlabelled. */}
-        {dep.type !== "finish_to_start" && (
-          <span className="shrink-0 text-xs text-muted-foreground">{dep.type.replaceAll("_", " ")}</span>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={`Remove dependency on ${other.title}`}
-          onClick={() => remove.mutate(dep.id, { onError: onRemoveError })}
-          className="size-7 shrink-0 text-muted-foreground"
-        >
-          <IconX />
-        </Button>
-      </li>
-    )
-
-  return (
-    <Section title="Dependencies">
-      <div className="grid gap-2">
-        <p className="text-xs text-muted-foreground">Depends on</p>
-        {dependsOn.length > 0 && (
-          <ul className="grid gap-1">{dependsOn.map((d) => row(d, byId.get(d.depends_on)))}</ul>
-        )}
-        {/* Always empty: it is an action, not a field, so it shows its placeholder. */}
-        <Select
-          value=""
-          disabled={!candidates.length}
-          onValueChange={(depends_on) =>
-            add.mutate(
-              { task_id: task.id, depends_on, type: "finish_to_start" },
-              { onError: (err) => toast.error(errorMessage(err, "Could not add dependency")) },
-            )
-          }
-        >
-          <SelectTrigger aria-label="Add a dependency" className="h-8 w-full text-sm">
-            <SelectValue placeholder="Add a task this depends on" />
-          </SelectTrigger>
-          <SelectContent>
-            {candidates.map((t) => (
-              <SelectItem key={t.id} value={t.id}>
-                {t.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {neededBy.length > 0 && (
-        <div className="grid gap-2">
-          <p className="text-xs text-muted-foreground">Needed by</p>
-          <ul className="grid gap-1">{neededBy.map((d) => row(d, byId.get(d.task_id)))}</ul>
-        </div>
-      )}
-    </Section>
-  )
-}
-
-function DeleteSubtask({
-  projectId,
-  task,
-  onDeleted,
-}: {
-  projectId: string
-  task: Task
-  onDeleted: () => void
-}) {
-  const remove = useDeleteTask(projectId)
-  return (
-    <Button
-      variant="ghost"
-      size="sm"
-      disabled={remove.isPending}
-      onClick={() =>
-        remove.mutate(task.id, {
-          onSuccess: onDeleted,
-          onError: (err) => toast.error(errorMessage(err, "Could not delete subtask")),
-        })
-      }
-      className="justify-self-start text-destructive hover:text-destructive"
-    >
-      Delete subtask
-    </Button>
+    <span role="status" className={cn("flex items-center gap-1.5 text-xs", className)}>
+      <Glyph className="size-3.5" />
+      {label}
+    </span>
   )
 }

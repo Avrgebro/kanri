@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  useIsMutating,
+  useMutation,
+  useMutationState,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query"
 
 import { supabase } from "@/lib/supabase"
 import type { DependencyType, Task, TaskDependency, TaskStatus } from "@/types/domain"
@@ -12,6 +18,8 @@ export const taskKeys = {
   tasks: (projectId: string) => ["projects", projectId, "tasks"] as const,
   epics: (projectId: string) => ["projects", projectId, "epics"] as const,
   dependencies: (projectId: string) => ["projects", projectId, "dependencies"] as const,
+  /** Every write below carries this key, so the save state can be read off it. */
+  writes: (projectId: string) => ["projects", projectId, "task-writes"] as const,
 }
 
 export function useProjectTasks(projectId: string) {
@@ -102,6 +110,7 @@ export function useMoveTask(projectId: string) {
   const key = taskKeys.tasks(projectId)
 
   const mutation = useMutation({
+    mutationKey: taskKeys.writes(projectId),
     mutationFn: async ({ taskId, status, epic_id, writes }: MoveTaskInput) => {
       const { error } = await supabase.rpc("move_task", {
         p_task: taskId,
@@ -148,6 +157,7 @@ export function useUpdateTask(projectId: string) {
   const qc = useQueryClient()
   const key = taskKeys.tasks(projectId)
   return useMutation({
+    mutationKey: taskKeys.writes(projectId),
     mutationFn: async ({ id, ...fields }: TaskFields & { id: string }) => {
       const { data, error } = await supabase
         .from("tasks")
@@ -176,6 +186,7 @@ export function useUpdateTask(projectId: string) {
 export function useCreateSubtask(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
+    mutationKey: taskKeys.writes(projectId),
     mutationFn: async ({
       parent,
       title,
@@ -208,6 +219,7 @@ export function useCreateSubtask(projectId: string) {
 export function useDeleteTask(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
+    mutationKey: taskKeys.writes(projectId),
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("tasks").delete().eq("id", id)
       if (error) throw error
@@ -228,6 +240,7 @@ export function useDeleteTask(projectId: string) {
 export function useAddDependency(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
+    mutationKey: taskKeys.writes(projectId),
     mutationFn: async (dep: {
       id?: string
       task_id: string
@@ -255,6 +268,7 @@ export function useAddDependency(projectId: string) {
 export function useDeleteDependency(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
+    mutationKey: taskKeys.writes(projectId),
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("task_dependencies").delete().eq("id", id)
       if (error) throw error
@@ -265,4 +279,20 @@ export function useDeleteDependency(projectId: string) {
         deps?.filter((d) => d.id !== id),
       ),
   })
+}
+
+// ---------------------------------------------------------------- save state
+
+export type SaveState = "saving" | "failed" | "saved"
+
+/**
+ * What the task sheet shows in place of a Save button, read off the writes
+ * above: saving while any is in flight, failed if the latest one failed.
+ */
+export function useSaveState(projectId: string): SaveState {
+  const mutationKey = taskKeys.writes(projectId)
+  const pending = useIsMutating({ mutationKey })
+  const statuses = useMutationState({ filters: { mutationKey }, select: (m) => m.state.status })
+  if (pending) return "saving"
+  return statuses.at(-1) === "error" ? "failed" : "saved"
 }

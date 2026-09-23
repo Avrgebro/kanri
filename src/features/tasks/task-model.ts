@@ -1,3 +1,4 @@
+import { daysBetween, parseDay } from "@/lib/dates"
 import { rankBetween } from "@/lib/rank"
 import type { DependencyType, Task, TaskStatus } from "@/types/domain"
 
@@ -14,6 +15,19 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 }
 
 export const STATUSES = Object.keys(STATUS_LABELS) as TaskStatus[]
+
+/**
+ * Dependency types as the sheet names them. Finish-to-start is the default
+ * and goes unlabelled on a row; the others show the short form.
+ */
+export const DEPENDENCY_LABELS: Record<DependencyType, { short: string; name: string; hint: string }> = {
+  finish_to_start: { short: "F→S", name: "Finish-to-start", hint: "Can't start until the other finishes" },
+  start_to_start: { short: "S→S", name: "Start-to-start", hint: "Can't start until the other starts" },
+  finish_to_finish: { short: "F→F", name: "Finish-to-finish", hint: "Can't finish until the other finishes" },
+  start_to_finish: { short: "S→F", name: "Start-to-finish", hint: "Can't finish until the other starts" },
+}
+
+export const DEPENDENCY_TYPES = Object.keys(DEPENDENCY_LABELS) as DependencyType[]
 
 /**
  * Tasks each task is waiting on: unfinished predecessors of a finish-to-start
@@ -76,3 +90,23 @@ export const endOfGroup = (tasks: Task[], task: Task, status: TaskStatus, epic_i
 /** Where a new subtask goes: after its parent's existing subtasks. */
 export const nextSubtaskPosition = (tasks: Task[], parentId: string) =>
   after(tasks.filter((t) => t.parent_id === parentId))
+
+/** How close a task is to its due date, within the week; done tasks never warn. */
+export type DueState = { kind: "overdue"; days: number } | { kind: "soon"; days: number }
+
+export const SOON_DAYS = 7
+
+export function dueState(task: Task, today: Date): DueState | null {
+  if (!task.due_date || task.status === "done") return null
+  const days = daysBetween(today, parseDay(task.due_date))
+  if (days < 0) return { kind: "overdue", days: -days }
+  if (days <= SOON_DAYS) return { kind: "soon", days }
+  return null
+}
+
+/** "3 days overdue", "today", "in 2 days". */
+export function describeDue(due: DueState): string {
+  const n = (k: number) => `${k} day${k === 1 ? "" : "s"}`
+  if (due.kind === "overdue") return `${n(due.days)} overdue`
+  return due.days === 0 ? "today" : `in ${n(due.days)}`
+}

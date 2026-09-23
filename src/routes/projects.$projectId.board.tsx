@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/layout/empty-state"
 import { PageBody } from "@/components/layout/page-body"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TaskBoard } from "@/features/board/task-board"
+import { useProject } from "@/features/projects/queries"
 import {
   useProjectDependencies,
   useProjectEpics,
@@ -28,6 +29,8 @@ function Board() {
   const { projectId } = Route.useParams()
   const { task: openTaskId } = Route.useSearch()
   const navigate = Route.useNavigate()
+  // Already loaded by the project layout; this reads it from the cache.
+  const project = useProject(projectId)
   const tasks = useProjectTasks(projectId)
   const epics = useProjectEpics(projectId)
   const dependencies = useProjectDependencies(projectId)
@@ -76,7 +79,13 @@ function Board() {
   return (
     <PageBody flush>
       <TaskBoard {...data} onOpenTask={openTask} />
-      <TaskSheet {...data} taskId={openTaskId} onOpenTask={openTask} onClose={closeTask} />
+      <TaskSheet
+        {...data}
+        projectName={project.data?.name ?? ""}
+        taskId={openTaskId}
+        onOpenTask={openTask}
+        onClose={closeTask}
+      />
     </PageBody>
   )
 }
