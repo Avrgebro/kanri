@@ -3,10 +3,15 @@ import type { Enums, Tables } from "@/types/database"
 /**
  * The app's vocabulary, derived from the generated schema.
  *
- * Rule: anything that mirrors a table or enum is aliased from `database.ts`,
- * so a migration + `supabase gen types` is the single source of truth and a
- * changed column becomes a compile error. Only shapes the database cannot
- * express — typed views over `jsonb` — are hand-written here.
+ * Two rules:
+ *
+ * 1. Anything that mirrors a table or enum is aliased from `database.ts`, so a
+ *    migration + `supabase gen types` is the single source of truth and a
+ *    changed column becomes a compile error. Only shapes the database cannot
+ *    express — typed views over `jsonb` — are hand-written here.
+ * 2. **Bare row types live here; join-shaped types live beside the query that
+ *    produces them.** `ProjectRow` (row + joined client) belongs in
+ *    `features/projects/queries.ts`, not in this file.
  */
 
 // ---------------------------------------------------------------- enums
@@ -17,10 +22,12 @@ export type LineUnit = Enums<"line_unit">
 export type TaskStatus = Enums<"task_status">
 export type ProjectStatus = Enums<"project_status">
 export type EpicStatus = Enums<"epic_status">
+export type DependencyType = Enums<"dependency_type">
 
 // ---------------------------------------------------------------- rows
 
 export type Client = Tables<"clients">
+export type Project = Tables<"projects">
 export type EstimateLine = Tables<"estimate_lines">
 export type Epic = Tables<"epics">
 export type Task = Tables<"tasks">

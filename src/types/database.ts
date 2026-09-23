@@ -243,6 +243,7 @@ export type Database = {
           taxable: boolean
           unit: Database["public"]["Enums"]["line_unit"]
           unit_price_cents: number
+          updated_at: string
         }
         Insert: {
           description: string
@@ -257,6 +258,7 @@ export type Database = {
           taxable?: boolean
           unit?: Database["public"]["Enums"]["line_unit"]
           unit_price_cents?: number
+          updated_at?: string
         }
         Update: {
           description?: string
@@ -271,6 +273,7 @@ export type Database = {
           taxable?: boolean
           unit?: Database["public"]["Enums"]["line_unit"]
           unit_price_cents?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -491,21 +494,21 @@ export type Database = {
           id: string
           owner_id: string
           task_id: string
-          type: string
+          type: Database["public"]["Enums"]["dependency_type"]
         }
         Insert: {
           depends_on: string
           id?: string
           owner_id?: string
           task_id: string
-          type?: string
+          type?: Database["public"]["Enums"]["dependency_type"]
         }
         Update: {
           depends_on?: string
           id?: string
           owner_id?: string
           task_id?: string
-          type?: string
+          type?: Database["public"]["Enums"]["dependency_type"]
         }
         Relationships: [
           {
@@ -526,7 +529,6 @@ export type Database = {
       }
       tasks: {
         Row: {
-          actual_hours: number
           completed_at: string | null
           created_at: string
           description: string | null
@@ -546,7 +548,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          actual_hours?: number
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -566,7 +567,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          actual_hours?: number
           completed_at?: string | null
           created_at?: string
           description?: string | null
@@ -669,9 +669,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      accept_estimate: {
+        Args: { p_estimate: string; p_project_name?: string }
+        Returns: string
+      }
+      task_actual_hours: {
+        Args: { t: Database["public"]["Tables"]["tasks"]["Row"] }
+        Returns: number
+      }
     }
     Enums: {
+      dependency_type:
+        | "finish_to_start"
+        | "start_to_start"
+        | "finish_to_finish"
+        | "start_to_finish"
       epic_status: "planned" | "active" | "done"
       estimate_status: "draft" | "sent" | "accepted" | "rejected" | "expired"
       line_kind: "section" | "item"
@@ -814,6 +826,12 @@ export const Constants = {
   },
   public: {
     Enums: {
+      dependency_type: [
+        "finish_to_start",
+        "start_to_start",
+        "finish_to_finish",
+        "start_to_finish",
+      ],
       epic_status: ["planned", "active", "done"],
       estimate_status: ["draft", "sent", "accepted", "rejected", "expired"],
       line_kind: ["section", "item"],

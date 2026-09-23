@@ -33,14 +33,19 @@ supabase/
   seed.sql
 ```
 
-The rule: **`components/ui` is the only place primitives live**, and nothing in
-it is edited by hand — `npx shadcn@latest add <name>` must stay safe to re-run.
-(One documented exception: `ui/sonner.tsx` imports `@/hooks/use-theme` instead of
-`next-themes`, which this app does not use. Re-adding it will reintroduce that
-import.)
-Anything composed from primitives goes in `components/layout` (app chrome) or
-`features/<area>` (domain). Nothing outside a feature folder imports from it
-except routes.
+The rules:
+
+- **`components/ui` is the only place primitives live**, and nothing in it is
+  edited by hand — `npx shadcn@latest add <name>` must stay safe to re-run.
+  (One documented exception: `ui/sonner.tsx` imports `@/hooks/use-theme`
+  instead of `next-themes`, which this app does not use.)
+- Anything composed from primitives goes in `components/layout` (app chrome)
+  or `features/<area>` (domain).
+- **A feature may import another feature's `queries.ts` — that file is its
+  public data API — and never its components.** A project form needs a client
+  picker, so `features/projects` importing `useClients` is correct; importing
+  a client *component* is not. A component that genuinely needs sharing moves
+  to `components/layout`.
 
 ## Model
 
@@ -60,16 +65,31 @@ epic** and each **item → task**, carrying `hours` into `tasks.estimate_hours`.
 
 - **Money is integer cents.** Never floats.
 - **Estimates freeze on send.** `subtotal/tax/total_cents` and `doc_config` are
-  snapshotted so a sent PDF always re-renders as the client saw it. Changing your
-  logo or rate card in June must not alter what you sent in January.
+  snapshotted, *and a trigger rejects any edit to `estimate_lines` once the
+  estimate leaves `draft`* — otherwise the PDF would re-render from live lines
+  beside a frozen total. Revising a sent estimate means cloning it to a new
+  draft with a new number, which is what a revised estimate actually is.
+- **Acceptance is one SQL call.** `accept_estimate(estimate_id)` marks the
+  estimate accepted, creates the project, and seeds epics from sections and
+  tasks from items in a single transaction. The browser has no transaction, so
+  a client-side sequence could half-seed a project and duplicate on retry.
+  Partial unique indexes on `source_line_id` make a double-accept fail loudly.
+- **Hours logged are computed, never stored.** `time_entries` is the source of
+  truth; there is no `tasks.actual_hours` to drift.
 - **Hiding hours is presentation only.** `doc_config.show_line_hours` controls the
   PDF; `estimate_lines.hours` is always stored, because accepted lines seed tasks.
-- **Hierarchy vs. flat sets.** Epic → Task → Subtask is the only nesting. Anything
-  that cuts across epics (a dated release, say) gets its own flat table plus a
-  nullable FK — never a new tree level.
+- **Hierarchy vs. flat sets.** Epic → Task → Subtask is the only nesting,
+  enforced by a trigger, not by convention. Anything that cuts across epics (a
+  dated release, say) gets its own flat table plus a nullable FK — never a new
+  tree level.
+- **Invariants live in the database where they can.** Subtask depth, link
+  types and owner scoping are constraints and triggers, not prose. A rule the
+  schema can express should not be left to discipline.
 - **Tasks may have no epic.** An "unassigned" swimlane beats inventing an epic.
-- **SVAR shapes stop at the adapter.** `src/features/*/adapter.ts` maps domain rows
-  into SVAR's format. Nothing outside those files knows SVAR exists.
+- **SVAR shapes stop at the adapter.** `src/features/*/adapter.ts` maps domain
+  rows into SVAR's format. Nothing outside those files knows SVAR exists — the
+  database stores `finish_to_start`, the adapter translates it to SVAR's
+  `e2s`.
 - **Editing is ours.** SVAR's built-in editors stay off; clicking a card or bar
   opens a shadcn sheet, so there's one task editor and one visual language.
 - **RLS on every table.** `owner_id = auth.uid()`, forced. A new table without a

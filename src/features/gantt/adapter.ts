@@ -1,15 +1,28 @@
 import type { Epic, Task, TaskDependency } from '@/types/domain'
 
-/** Epics render as summary bars spanning their children; tasks as normal bars. */
-export function toGanttTasks(tasks: Task[], epics: Epic[]) {
-  const byEpic = new Map<string, Task[]>()
-  for (const t of tasks) {
-    if (!t.epic_id) continue
-    const list = byEpic.get(t.epic_id) ?? []
-    list.push(t)
-    byEpic.set(t.epic_id, list)
-  }
+/**
+ * Adapter boundary: SVAR's shapes stop here. The database stores domain link
+ * types; the vendor's abbreviations exist only in this file.
+ */
+const SVAR_LINK_TYPE: Record<TaskDependency['type'], string> = {
+  finish_to_start: 'e2s',
+  start_to_start: 's2s',
+  finish_to_finish: 'e2e',
+  start_to_finish: 's2e',
+}
 
+/**
+ * Epics render as summary bars spanning their children; tasks as normal bars.
+ *
+ * `loggedHours` maps task id to hours logged. It is passed in rather than read
+ * off the task because hours live in `time_entries` — the task row has no
+ * cached total to go stale.
+ */
+export function toGanttTasks(
+  tasks: Task[],
+  epics: Epic[],
+  loggedHours: Record<string, number> = {},
+) {
   const epicRows = epics.map((e) => ({
     id: e.id,
     text: e.name,
@@ -25,10 +38,15 @@ export function toGanttTasks(tasks: Task[], epics: Epic[]) {
     end: t.due_date ? new Date(t.due_date) : undefined,
     duration: t.start_date && t.due_date ? undefined : 1,
     progress:
-      t.status === 'done' ? 100 : t.estimate_hours
-        ? Math.min(100, Math.round((Number(t.actual_hours) / Number(t.estimate_hours)) * 100))
-        : 0,
-    type: t.parent_id ? ('task' as const) : ('task' as const),
+      t.status === 'done'
+        ? 100
+        : t.estimate_hours
+          ? Math.min(
+              100,
+              Math.round(((loggedHours[t.id] ?? 0) / Number(t.estimate_hours)) * 100),
+            )
+          : 0,
+    type: 'task' as const,
   }))
 
   return [...epicRows, ...taskRows]
@@ -39,6 +57,6 @@ export function toGanttLinks(deps: TaskDependency[]) {
     id: d.id,
     source: d.depends_on,
     target: d.task_id,
-    type: d.type,
+    type: SVAR_LINK_TYPE[d.type],
   }))
 }
