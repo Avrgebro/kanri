@@ -32,6 +32,8 @@ export type EstimateLine = Tables<"estimate_lines">
 export type Epic = Tables<"epics">
 export type Task = Tables<"tasks">
 export type TaskDependency = Tables<"task_dependencies">
+export type DocFolder = Tables<"doc_folders">
+export type DocFile = Tables<"doc_files">
 
 /**
  * What the PDF renderer needs. `estimates.doc_config` is `jsonb`, so the

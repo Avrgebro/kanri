@@ -673,6 +673,14 @@ export type Database = {
         Args: { p_estimate: string; p_project_name?: string }
         Returns: string
       }
+      delete_docs: {
+        Args: { p_files: string[]; p_folders: string[] }
+        Returns: string[]
+      }
+      move_docs: {
+        Args: { p_files: string[]; p_folders: string[]; p_target?: string }
+        Returns: undefined
+      }
       move_task: {
         Args: {
           p_epic?: string

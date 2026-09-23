@@ -27,7 +27,8 @@ src/
                   task-model.ts (waiting-on, cycles, positions), the task sheet
     board/        custom kanban: board-model.ts (cells, drops), task-board, task-card
     gantt/        SVAR Gantt: adapter (dates, link types), project-gantt
-    docs/         SVAR File Manager adapter
+    docs/         SVAR File Manager as a pure view: adapter (rows <-> paths), queries
+                  (every write, storage objects), project-docs
   routes/         TanStack file-based routes; each renders its own <SiteHeader />
                   and <PageBody> (`flush` for the board and Gantt, which scroll
                   themselves)
@@ -110,9 +111,10 @@ npm run test:tz   # the same suite under three timezones — date code must not
 ```
 
 Tests cover pure logic and vendor contracts, not rendering: board ordering and
-rebalancing, task rules (waiting-on, cycles, positions), and the Gantt adapter. Every Gantt fixture is also fed through
-SVAR's own store, because an adapter that type-checks is not proof SVAR accepts
-its output — that gap once shipped a crash.
+rebalancing, task rules (waiting-on, cycles, positions), and the Gantt and
+docs adapters. Every Gantt and docs fixture is also fed through SVAR's own
+store, because an adapter that type-checks is not proof SVAR accepts its
+output — that gap once shipped a crash.
 
 ## Setup
 

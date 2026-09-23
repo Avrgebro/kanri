@@ -311,7 +311,7 @@ function EstimateField({
       onKeyDown={blurOnEnter}
       onBlur={() => {
         const hours = draft.trim() === "" ? null : Number(draft)
-        if (hours !== null && !(hours >= 0)) {
+        if (hours !== null && (Number.isNaN(hours) || hours < 0)) {
           setDraft(task.estimate_hours?.toString() ?? "")
           return
         }
@@ -325,7 +325,7 @@ function TagsField({ task, onSave }: { task: Task; onSave: (tags: string[]) => v
   const [draft, setDraft] = useState("")
 
   function add() {
-    const tag = draft.trim().replace(/,$/, "").trim()
+    const tag = draft.trim()
     setDraft("")
     if (tag && !task.tags.includes(tag)) onSave([...task.tags, tag])
   }
@@ -434,6 +434,7 @@ function Subtasks({
 
   function toggle(subtask: Task, checked: boolean) {
     move(
+      // The epic is the parent's either way; the schema holds it there.
       { taskId: subtask.id, status: checked ? "done" : "todo", epic_id: subtask.epic_id, writes: [] },
       (err) => toast.error(errorMessage(err, "Could not update subtask")),
     )
@@ -545,9 +546,9 @@ function Dependencies({
         {dependsOn.length > 0 && (
           <ul className="grid gap-1">{dependsOn.map((d) => row(d, byId.get(d.depends_on)))}</ul>
         )}
-        {/* Keyed on the count so the picker resets to its placeholder after each add. */}
+        {/* Always empty: it is an action, not a field, so it shows its placeholder. */}
         <Select
-          key={dependsOn.length}
+          value=""
           disabled={!candidates.length}
           onValueChange={(depends_on) =>
             add.mutate(

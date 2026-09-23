@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* The enter/exit animations shadcn components are written against
+   (animate-in, slide-in-from-right, …). Without it those classes are no-ops. */
+@import "tw-animate-css";
 
 /* SVAR owns the Gantt and Docs views. `all.css`, not `style.css`: the latter
    is the widget alone and omits the grid, core and editor styles it is built
@@ -245,6 +248,8 @@
   --wx-gantt-border: 1px solid var(--grid-line);
   --wx-border-color: var(--grid-line);
   --wx-border-radius: var(--radius-sm);
+  /* Inputs round like shadcn's <Input> (rounded-md). */
+  --wx-input-border-radius: var(--radius-md);
   --wx-color-font: var(--foreground);
   --wx-color-font-alt: var(--muted-foreground);
   --wx-color-secondary-font: var(--muted-foreground);
@@ -286,4 +291,51 @@
   --wx-gantt-icon-color: var(--muted-foreground);
   --wx-gantt-marker-color: var(--primary);
   --wx-gantt-critical-color: var(--destructive);
+
+  /* File Manager: one surface, like the board and Gantt. The page background
+     runs through, panels are separated by lines, and file cards are raised
+     with the board cells' muted tint. */
+  --wx-fm-background: var(--background);
+  --wx-fm-select-background: var(--accent);
+  --wx-fm-grid-border: 1px solid var(--grid-line);
+  --wx-fm-grid-header-color: var(--background);
+  --wx-fm-button-font-color: var(--muted-foreground);
+  --wx-table-select-background: var(--accent);
+  --wx-table-select-color: var(--foreground);
+  --wx-icon-color: var(--muted-foreground);
+}
+
+/* File Manager panels. SVAR spaces them with padding on the sidebar and
+   content columns and sizes the content column with an inline calc() that
+   depends on that padding, so the layout is left alone: these rules change
+   surfaces and lines only, plus top padding, which no width depends on. */
+.svar-surface .wx-filemanager {
+  /* The list view's header, tinted like the cards. Scoped here: the Gantt's
+     grid reads the same variable. */
+  --wx-table-header-background: color-mix(in oklab, var(--muted) 40%, transparent);
+}
+/* SVAR hardcodes 2px on the search box rather than reading
+   --wx-input-border-radius like its other inputs. */
+.svar-surface .wx-filemanager .wx-search-input .wx-text {
+  border-radius: var(--radius-md);
+}
+.svar-surface .wx-filemanager .wx-toolbar {
+  border-bottom: 1px solid var(--grid-line);
+}
+.svar-surface .wx-filemanager .wx-sidebar,
+.svar-surface .wx-filemanager .wx-content-item,
+.svar-surface .wx-filemanager .wx-content-item-fit {
+  padding-top: 10px;
+}
+.svar-surface .wx-filemanager .wx-sidebar .wx-wrapper,
+.svar-surface .wx-filemanager .wx-breadcrumbs {
+  border: 1px solid var(--grid-line);
+  border-radius: var(--radius-lg);
+}
+.svar-surface .wx-filemanager .wx-cards .wx-item {
+  background: color-mix(in oklab, var(--muted) 40%, transparent);
+  border-radius: var(--radius-lg);
+}
+.svar-surface .wx-filemanager .wx-cards .wx-item:hover {
+  background: color-mix(in oklab, var(--muted) 70%, transparent);
 }

@@ -189,9 +189,8 @@ export function useCreateSubtask(projectId: string) {
         .from("tasks")
         .insert({
           project_id: projectId,
+          // The schema gives a subtask its parent's epic.
           parent_id: parent.id,
-          // A subtask lives in its parent's epic, so the Gantt groups it there.
-          epic_id: parent.epic_id,
           status: "todo",
           title,
           position,
