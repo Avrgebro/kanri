@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
-/* SVAR owns only the three canvas views; its stylesheets are scoped by theme
-   bridge below so they follow the shadcn tokens rather than Willow defaults. */
-@import "@svar-ui/react-gantt/style.css";
-@import "@svar-ui/react-kanban/style.css";
-@import "@svar-ui/react-filemanager/style.css";
+/* SVAR owns the Gantt and Docs views. `all.css`, not `style.css`: the latter
+   is the widget alone and omits the grid, core and editor styles it is built
+   on — without them the Gantt's task grid renders with no borders and ignores
+   the theme's font size. The bridge at the bottom maps the result onto our
+   tokens. */
+@import "@svar-ui/react-gantt/all.css";
+@import "@svar-ui/react-filemanager/all.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -42,6 +44,9 @@
   --border: #e2e8f0;
   --input: #e2e8f0;
   --ring: #aff33e;
+  /* Dense table lines. A plain hex on purpose: SVAR parses it out of a
+     border shorthand and cannot read color-mix(). */
+  --grid-line: #e2e8f0;
 
   --chart-1: #aff33e;
   --chart-2: #334155;
@@ -102,6 +107,7 @@
   --border: #1e293b;
   --input: #1e293b;
   --ring: #aff33e;
+  --grid-line: #293041;
 
   --chart-1: #aff33e;
   --chart-2: #3b82f6;
@@ -195,6 +201,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Without this, native scrollbars render light on a dark UI. */
+  .dark {
+    color-scheme: dark;
+  }
   html, body, #root {
     height: 100%;
   }
@@ -207,33 +217,73 @@
 }
 
 /* ---------------------------------------------------------------- SVAR bridge
-   Maps the theme above onto SVAR's own variables so the Gantt, Kanban and File
-   Manager read as part of the app. Scoped to .svar-surface so nothing leaks. */
+   Maps the theme onto SVAR's variables so the Gantt and File Manager read as
+   part of the app.
+
+   Targets .wx-willow-dark-theme itself, not an ancestor: <WillowDark> renders
+   that wrapper and defines every --wx-* variable on it, so anything set higher
+   up is simply overridden. Two classes out-rank its one.
+
+   Bars use the chart palette, not --primary: a whole timeline of lime bars
+   would put far more than the intended ~5% of lime on screen. */
 
 .svar-surface {
   height: 100%;
+}
+
+.svar-surface .wx-willow-dark-theme {
+  height: 100%;
+
+  /* Lines must be a plain hex: SVAR reads --wx-gantt-border and extracts its
+     colour as everything after the first "#", then paints the chart grid onto
+     a canvas with it. A color-mix() there yields garbage and black lines. */
 
   --wx-background: var(--background);
-  --wx-background-alt: var(--muted);
-  --wx-border: 1px solid var(--border);
+  --wx-background-alt: var(--card);
+  --wx-background-hover: var(--accent);
+  --wx-border: 1px solid var(--grid-line);
+  --wx-gantt-border: 1px solid var(--grid-line);
+  --wx-border-color: var(--grid-line);
+  --wx-border-radius: var(--radius-sm);
   --wx-color-font: var(--foreground);
+  --wx-color-font-alt: var(--muted-foreground);
   --wx-color-secondary-font: var(--muted-foreground);
   --wx-color-font-disabled: var(--muted-foreground);
   --wx-color-primary: var(--primary);
+  --wx-color-primary-font: var(--primary-foreground);
+  --wx-color-primary-selected: color-mix(in oklab, var(--primary) 18%, transparent);
   --wx-color-link: var(--primary);
   --wx-color-danger: var(--destructive);
 
   --wx-font-family: var(--font-sans);
-  --wx-font-size: 0.875rem;
-  --wx-font-size-sm: 0.8125rem;
+  --wx-font-size: 0.8125rem;
+  --wx-font-size-sm: 0.75rem;
 
-  --wx-gantt-border-color: var(--border);
+  --wx-gantt-border-color: var(--grid-line);
+  --wx-gantt-select-color: var(--accent);
+  --wx-gantt-holiday-background: color-mix(in oklab, var(--muted) 45%, transparent);
+
   --wx-gantt-bar-border-radius: var(--radius-sm);
+  --wx-gantt-bar-shadow: none;
+
+  /* Bars from the theme's chart palette — blue tasks, green summaries, like
+     SVAR's own scheme. The done portion is the darker shade. */
+  --wx-gantt-task-color: var(--chart-2);
+  --wx-gantt-task-fill-color: color-mix(in oklab, var(--chart-2) 70%, black);
+  --wx-gantt-task-border-color: transparent;
+  --wx-gantt-task-font-color: var(--foreground);
+
+  --wx-gantt-summary-color: color-mix(in oklab, var(--chart-3) 72%, var(--background));
+  --wx-gantt-summary-fill-color: color-mix(in oklab, var(--chart-3) 55%, black);
+  --wx-gantt-summary-border-color: transparent;
+  --wx-gantt-summary-font-color: var(--foreground);
+
+  --wx-gantt-progress-border-color: var(--border);
   --wx-gantt-link-color: var(--muted-foreground);
   --wx-gantt-link-color-hovered: var(--primary);
+  --wx-gantt-link-marker-background: var(--secondary);
+  --wx-gantt-link-marker-color: var(--muted-foreground);
   --wx-gantt-icon-color: var(--muted-foreground);
   --wx-gantt-marker-color: var(--primary);
-  --wx-gantt-milestone-color: var(--primary);
-  --wx-gantt-holiday-background: var(--muted);
   --wx-gantt-critical-color: var(--destructive);
 }

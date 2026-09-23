@@ -7,7 +7,7 @@ import { SiteHeader } from "@/components/layout/site-header"
 
 export const Route = createFileRoute("/")({ component: Dashboard })
 
-/** Cross-project overview: active work, hours sold vs. logged, open estimates. */
+/** Cross-project overview: active work, what is due, open estimates. */
 function Dashboard() {
   return (
     <>

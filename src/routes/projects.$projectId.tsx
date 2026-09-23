@@ -43,23 +43,26 @@ function ProjectLayout() {
         actions={project && <ProjectMenu project={project} />}
       />
 
-      <PageBody>
-        {isLoading && <Skeleton className="h-28 rounded-xl" />}
+      {/* Each view renders its own PageBody: canvas views need it flush. */}
+      {project ? (
+        <Outlet />
+      ) : (
+        <PageBody>
+          {isLoading && <Skeleton className="h-28 rounded-xl" />}
 
-        {error && (
-          <div>
-            <p className="text-sm text-destructive">{errorMessage(error)}</p>
-            <Button asChild variant="outline" size="sm" className="mt-4">
-              <Link to="/projects">
-                <IconArrowLeft />
-                Back to projects
-              </Link>
-            </Button>
-          </div>
-        )}
-
-        {project && <Outlet />}
-      </PageBody>
+          {error && (
+            <div>
+              <p className="text-sm text-destructive">{errorMessage(error)}</p>
+              <Button asChild variant="outline" size="sm" className="mt-4">
+                <Link to="/projects">
+                  <IconArrowLeft />
+                  Back to projects
+                </Link>
+              </Button>
+            </div>
+          )}
+        </PageBody>
+      )}
     </>
   )
 }

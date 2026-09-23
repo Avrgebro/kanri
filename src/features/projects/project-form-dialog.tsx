@@ -118,7 +118,7 @@ function ProjectForm({
           <div className="grid gap-2">
             <Label htmlFor="client">Client</Label>
             <Select value={clientId} onValueChange={setClientId}>
-              <SelectTrigger id="client">
+              <SelectTrigger id="client" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -135,7 +135,7 @@ function ProjectForm({
           <div className="grid gap-2">
             <Label htmlFor="status">Status</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as ProjectStatus)}>
-              <SelectTrigger id="status">
+              <SelectTrigger id="status" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:tz": "for tz in America/Los_Angeles UTC Asia/Tokyo; do TZ=$tz vitest run || exit 1; done"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -18,7 +20,6 @@
     "@supabase/supabase-js": "^2.117.0",
     "@svar-ui/react-filemanager": "^2.6.0",
     "@svar-ui/react-gantt": "^2.7.3",
-    "@svar-ui/react-kanban": "^2.6.0",
     "@tabler/icons-react": "^3.48.0",
     "@tanstack/react-query": "^5.103.2",
     "@tanstack/react-router": "^1.170.38",
@@ -47,6 +48,7 @@
     "oxlint": "^1.81.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
-    "vite": "^8.3.0"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   }
 }

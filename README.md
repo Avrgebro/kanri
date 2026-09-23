@@ -7,7 +7,9 @@ Single-user project management + client estimating.
 - **Vite + React 19 + TypeScript** — SPA, no server. Nothing here needs SSR.
 - **TanStack Router** (file-based, typed) + **TanStack Query** (cache, optimistic DnD)
 - **Supabase** — Postgres + Storage + Auth, accessed from the browser under RLS
-- **SVAR** — Gantt, Kanban, File Manager only (the three expensive views)
+- **SVAR** — Gantt and File Manager only
+- **dnd-kit** — the board. SVAR's Kanban has no swimlanes in any edition, so the
+  board is built on shadcn + dnd-kit to get epic swimlanes and a native look
 - **shadcn/ui + Tailwind v4** — everything else: forms, dialogs, tables, nav
   (theme: "Light Green" from tweakcn — lime primary, slate neutrals, Inter)
 - **@react-pdf/renderer** — estimate PDFs, generated client-side
@@ -21,10 +23,13 @@ src/
     layout/       app shell: app-sidebar, nav-*, site-header, theme-toggle
   features/       one folder per domain area, self-contained
     estimates/    totals.ts + pdf/EstimateDocument.tsx
-    board/        SVAR Kanban adapter
-    gantt/        SVAR Gantt adapter
+    tasks/        a project's tasks and epics — the data every task view shares
+    board/        custom kanban: board-model.ts (pure ordering), task-board, queries
+    gantt/        SVAR Gantt: adapter (dates, link types), project-gantt, queries
     docs/         SVAR File Manager adapter
   routes/         TanStack file-based routes; each renders its own <SiteHeader />
+                  and <PageBody> (`flush` for the board and Gantt, which scroll
+                  themselves)
   hooks/          shared hooks
   lib/            supabase client, money, fractional ranking, cn
   types/          hand-written domain types
@@ -94,6 +99,19 @@ epic** and each **item → task**, carrying `hours` into `tasks.estimate_hours`.
   opens a shadcn sheet, so there's one task editor and one visual language.
 - **RLS on every table.** `owner_id = auth.uid()`, forced. A new table without a
   policy is a public table — see the `do $$` block at the bottom of the initial migration.
+
+## Tests
+
+```bash
+npm test          # vitest
+npm run test:tz   # the same suite under three timezones — date code must not
+                  # depend on where it runs
+```
+
+Tests cover pure logic and vendor contracts, not rendering: board ordering and
+rebalancing, and the Gantt adapter. Every Gantt fixture is also fed through
+SVAR's own store, because an adapter that type-checks is not proof SVAR accepts
+its output — that gap once shipped a crash.
 
 ## Setup
 

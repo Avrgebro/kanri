@@ -673,6 +673,16 @@ export type Database = {
         Args: { p_estimate: string; p_project_name?: string }
         Returns: string
       }
+      move_task: {
+        Args: {
+          p_epic?: string
+          p_ids: string[]
+          p_positions: number[]
+          p_status: Database["public"]["Enums"]["task_status"]
+          p_task: string
+        }
+        Returns: undefined
+      }
       task_actual_hours: {
         Args: { t: Database["public"]["Tables"]["tasks"]["Row"] }
         Returns: number
