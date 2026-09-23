@@ -1,0 +1,17 @@
+-- Dev seed. Runs after migrations on `supabase db reset`.
+--
+-- Everything is owner-scoped, so seeding needs a user to own it. With the local
+-- stack, create one first:
+--   npx supabase start
+--   (Studio → Authentication → Add user, or the auth API)
+-- then set the id below and uncomment.
+
+-- \set owner '00000000-0000-0000-0000-000000000000'
+--
+-- insert into settings (owner_id, company, branding, estimate_defaults) values (
+--   :'owner',
+--   '{"name":"Your Company","email":"you@example.com"}'::jsonb,
+--   '{"accent_color":"#2f8f6f"}'::jsonb,
+--   '{"tax_label":"Tax","tax_rate":0,"currency":"USD","valid_days":30,
+--     "show_line_hours":true,"show_unit_price":true}'::jsonb
+-- );

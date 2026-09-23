@@ -1,0 +1,126 @@
+# kanri
+
+Single-user project management + client estimating.
+
+## Stack
+
+- **Vite + React 19 + TypeScript** — SPA, no server. Nothing here needs SSR.
+- **TanStack Router** (file-based, typed) + **TanStack Query** (cache, optimistic DnD)
+- **Supabase** — Postgres + Storage + Auth, accessed from the browser under RLS
+- **SVAR** — Gantt, Kanban, File Manager only (the three expensive views)
+- **shadcn/ui + Tailwind v4** — everything else: forms, dialogs, tables, nav
+  (theme: "Light Green" from tweakcn — lime primary, slate neutrals, Inter)
+- **@react-pdf/renderer** — estimate PDFs, generated client-side
+
+## Layout
+
+```
+src/
+  components/
+    ui/           shadcn primitives ONLY — vendor-owned, regenerable, never hand-edited
+    layout/       app shell: app-sidebar, nav-*, site-header, theme-toggle
+  features/       one folder per domain area, self-contained
+    estimates/    totals.ts + pdf/EstimateDocument.tsx
+    board/        SVAR Kanban adapter
+    gantt/        SVAR Gantt adapter
+    docs/         SVAR File Manager adapter
+  routes/         TanStack file-based routes; each renders its own <SiteHeader />
+  hooks/          shared hooks
+  lib/            supabase client, money, fractional ranking, cn
+  types/          hand-written domain types
+supabase/
+  migrations/     schema as ordered migrations (Supabase CLI)
+  seed.sql
+```
+
+The rule: **`components/ui` is the only place primitives live**, and nothing in
+it is edited by hand — `npx shadcn@latest add <name>` must stay safe to re-run.
+(One documented exception: `ui/sonner.tsx` imports `@/hooks/use-theme` instead of
+`next-themes`, which this app does not use. Re-adding it will reintroduce that
+import.)
+Anything composed from primitives goes in `components/layout` (app chrome) or
+`features/<area>` (domain). Nothing outside a feature folder imports from it
+except routes.
+
+## Model
+
+```
+Client ─┬─ Estimate ── EstimateLine   (kind: 'section' | 'item')
+        └─ Project  ─┬─ Epic ── Task ── Task (subtask, one level)
+                     ├─ TaskDependency
+                     ├─ TimeEntry
+                     └─ DocFolder / DocFile  → Supabase Storage
+```
+
+Accepting an estimate sets `estimates.project_id` and converts each **section →
+epic** and each **item → task**, carrying `hours` into `tasks.estimate_hours`.
+`source_line_id` keeps the trail back to the sold line.
+
+## Decisions worth not re-litigating
+
+- **Money is integer cents.** Never floats.
+- **Estimates freeze on send.** `subtotal/tax/total_cents` and `doc_config` are
+  snapshotted so a sent PDF always re-renders as the client saw it. Changing your
+  logo or rate card in June must not alter what you sent in January.
+- **Hiding hours is presentation only.** `doc_config.show_line_hours` controls the
+  PDF; `estimate_lines.hours` is always stored, because accepted lines seed tasks.
+- **Hierarchy vs. flat sets.** Epic → Task → Subtask is the only nesting. Anything
+  that cuts across epics (a dated release, say) gets its own flat table plus a
+  nullable FK — never a new tree level.
+- **Tasks may have no epic.** An "unassigned" swimlane beats inventing an epic.
+- **SVAR shapes stop at the adapter.** `src/features/*/adapter.ts` maps domain rows
+  into SVAR's format. Nothing outside those files knows SVAR exists.
+- **Editing is ours.** SVAR's built-in editors stay off; clicking a card or bar
+  opens a shadcn sheet, so there's one task editor and one visual language.
+- **RLS on every table.** `owner_id = auth.uid()`, forced. A new table without a
+  policy is a public table — see the `do $$` block at the bottom of the initial migration.
+
+## Setup
+
+```bash
+cp .env.example .env         # VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY
+npm run dev
+```
+
+### Database
+
+Two environments, managed with the Supabase CLI. Nothing is changed by hand in
+a dashboard — local and prod must stay reproducible from `supabase/migrations/`.
+
+| | where | credentials |
+|---|---|---|
+| **dev** | local Docker stack (`npx supabase start`) | `.env.development`, committed (fixed demo keys) |
+| **prod** | Supabase project `bafwkzrqdziezdxfuujq` (us-west-2) | `.env.production.local`, gitignored |
+
+```bash
+npx supabase start                      # db, auth, storage, studio on :54321-54324
+npx supabase db reset                   # rebuild local from migrations + seed
+npx supabase stop                       # when done for the day
+
+npx supabase migration new <name>       # then edit the generated file
+npx supabase db diff -f <name>          # capture dashboard changes as a migration
+```
+
+Workflow for a schema change: write the migration, `db reset` to prove it applies
+from scratch, then `db push` to prod. Never push something that has not been
+reset locally first.
+
+```bash
+npx supabase db push                                                  # apply to prod
+npx supabase migration list                                           # local vs remote
+npx supabase gen types typescript --linked > src/types/database.ts    # generated rows
+```
+
+`src/types/domain.ts` is hand-written and intentionally separate from generated
+row types: it is the app's vocabulary, not a mirror of the tables.
+
+### Auth
+
+Single user, email + password. `AuthGate` in `main.tsx` shows the sign-in form
+when there is no session; there are no route guards, because RLS
+(`owner_id = auth.uid()`, forced on all 12 tables) is the real boundary.
+
+Create the local user once after `db reset` — Studio at http://127.0.0.1:54323
+→ Authentication → Add user (tick "Auto Confirm"). The signup trigger creates
+that user's `settings` row automatically. Do the same once in the prod
+dashboard.

@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+/* SVAR owns only the three canvas views; its stylesheets are scoped by theme
+   bridge below so they follow the shadcn tokens rather than Willow defaults. */
+@import "@svar-ui/react-gantt/style.css";
+@import "@svar-ui/react-kanban/style.css";
+@import "@svar-ui/react-filemanager/style.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------- tokens
+   Theme: "Light Green" (tweakcn).
+   Lime primary on slate neutrals, Inter + JetBrains Mono.
+
+   The app is dark-only: index.html sets class="dark" on <html>, so the .dark
+   block below always wins. The :root values are kept as the fallback the
+   cascade needs, and so light mode is one attribute away if it is ever wanted.
+
+   Surface values deviate from the published theme on purpose. With
+   <Sidebar variant="inset"> the page backdrop paints --sidebar and the main
+   area is a floating card of --background, so those two must differ. As
+   published they were #ffffff/#fbfcf8 in light (invisible) and identical in
+   dark. Backdrop now recedes, main surface lifts. */
+
+:root {
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #aff33e;
+  --primary-foreground: #000000;
+  --secondary: #334155;
+  --secondary-foreground: #f8fafc;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #f0fdf4;
+  --accent-foreground: #166534;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #aff33e;
+
+  --chart-1: #aff33e;
+  --chart-2: #334155;
+  --chart-3: #22c55e;
+  --chart-4: #64748b;
+  --chart-5: #94a3b8;
+
+  --sidebar: #f1f5f9;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #aff33e;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #e2e8f0;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #aff33e;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius: 8px;
+  --tracking-normal: -0.01em;
+  --spacing: 0.25rem;
+
+  --shadow-color: #000000;
+  --shadow-opacity: 0.05;
+  --shadow-blur: 20px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 8px;
+  --shadow-2xs: 0 8px 20px 0px hsl(0 0% 0% / 0.03);
+  --shadow-xs: 0 8px 20px 0px hsl(0 0% 0% / 0.03);
+  --shadow-sm: 0 8px 20px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
+  --shadow: 0 8px 20px 0px hsl(0 0% 0% / 0.05), 0 1px 2px -1px hsl(0 0% 0% / 0.05);
+  --shadow-md: 0 8px 20px 0px hsl(0 0% 0% / 0.05), 0 2px 4px -1px hsl(0 0% 0% / 0.05);
+  --shadow-lg: 0 8px 20px 0px hsl(0 0% 0% / 0.05), 0 4px 6px -1px hsl(0 0% 0% / 0.05);
+  --shadow-xl: 0 8px 20px 0px hsl(0 0% 0% / 0.05), 0 8px 10px -1px hsl(0 0% 0% / 0.05);
+  --shadow-2xl: 0 8px 20px 0px hsl(0 0% 0% / 0.13);
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --popover: #0f172a;
+  --popover-foreground: #f8fafc;
+  --primary: #aff33e;
+  --primary-foreground: #000000;
+  --secondary: #1e293b;
+  --secondary-foreground: #f8fafc;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #14532d;
+  --accent-foreground: #aff33e;
+  --destructive: #991b1b;
+  --destructive-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #aff33e;
+
+  --chart-1: #aff33e;
+  --chart-2: #3b82f6;
+  --chart-3: #22c55e;
+  --chart-4: #a855f7;
+  --chart-5: #f59e0b;
+
+  --sidebar: #020617;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #aff33e;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #aff33e;
+
+  --shadow-opacity: 0.4;
+  --shadow-blur: 25px;
+  --shadow-offset-y: 10px;
+  --shadow-2xs: 0 10px 25px 0px hsl(0 0% 0% / 0.20);
+  --shadow-xs: 0 10px 25px 0px hsl(0 0% 0% / 0.20);
+  --shadow-sm: 0 10px 25px 0px hsl(0 0% 0% / 0.40), 0 1px 2px -1px hsl(0 0% 0% / 0.40);
+  --shadow: 0 10px 25px 0px hsl(0 0% 0% / 0.40), 0 1px 2px -1px hsl(0 0% 0% / 0.40);
+  --shadow-md: 0 10px 25px 0px hsl(0 0% 0% / 0.40), 0 2px 4px -1px hsl(0 0% 0% / 0.40);
+  --shadow-lg: 0 10px 25px 0px hsl(0 0% 0% / 0.40), 0 4px 6px -1px hsl(0 0% 0% / 0.40);
+  --shadow-xl: 0 10px 25px 0px hsl(0 0% 0% / 0.40), 0 8px 10px -1px hsl(0 0% 0% / 0.40);
+  --shadow-2xl: 0 10px 25px 0px hsl(0 0% 0% / 1.00);
+}
+
+/* ---------------------------------------------------------------- tailwind */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  --radius-xs: calc(var(--radius) - 6px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
+
+  --tracking-normal: var(--tracking-normal);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body, #root {
+    height: 100%;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    font-family: var(--font-sans);
+    letter-spacing: var(--tracking-normal);
+  }
+}
+
+/* ---------------------------------------------------------------- SVAR bridge
+   Maps the theme above onto SVAR's own variables so the Gantt, Kanban and File
+   Manager read as part of the app. Scoped to .svar-surface so nothing leaks. */
+
+.svar-surface {
+  height: 100%;
+
+  --wx-background: var(--background);
+  --wx-background-alt: var(--muted);
+  --wx-border: 1px solid var(--border);
+  --wx-color-font: var(--foreground);
+  --wx-color-secondary-font: var(--muted-foreground);
+  --wx-color-font-disabled: var(--muted-foreground);
+  --wx-color-primary: var(--primary);
+  --wx-color-link: var(--primary);
+  --wx-color-danger: var(--destructive);
+
+  --wx-font-family: var(--font-sans);
+  --wx-font-size: 0.875rem;
+  --wx-font-size-sm: 0.8125rem;
+
+  --wx-gantt-border-color: var(--border);
+  --wx-gantt-bar-border-radius: var(--radius-sm);
+  --wx-gantt-link-color: var(--muted-foreground);
+  --wx-gantt-link-color-hovered: var(--primary);
+  --wx-gantt-icon-color: var(--muted-foreground);
+  --wx-gantt-marker-color: var(--primary);
+  --wx-gantt-milestone-color: var(--primary);
+  --wx-gantt-holiday-background: var(--muted);
+  --wx-gantt-critical-color: var(--destructive);
+}
