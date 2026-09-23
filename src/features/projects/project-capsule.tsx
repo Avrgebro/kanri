@@ -38,7 +38,7 @@ export const PROJECT_VIEWS = [
     label: "Panel",
     icon: IconGauge,
     to: "/projects/$projectId",
-    action: "Log time",
+    action: null,
     /** Panel is a normal scrolling page; the rest are SVAR canvas widgets. */
     fullBleed: false,
   },

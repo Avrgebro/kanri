@@ -59,10 +59,12 @@ function ProjectLayout() {
         actions={
           <>
             <ProjectMenu project={project} />
-            <Button size="sm" className="gap-1.5 font-semibold">
-              <IconPlus className="size-4" />
-              {current.action}
-            </Button>
+            {current.action && (
+              <Button size="sm" className="gap-1.5 font-semibold">
+                <IconPlus className="size-4" />
+                {current.action}
+              </Button>
+            )}
           </>
         }
       />
