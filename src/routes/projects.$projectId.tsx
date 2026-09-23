@@ -1,5 +1,5 @@
 import { Outlet, createFileRoute, Link, useMatchRoute } from "@tanstack/react-router"
-import { IconArrowLeft, IconPlus } from "@tabler/icons-react"
+import { IconArrowLeft } from "@tabler/icons-react"
 
 import { PageBody } from "@/components/layout/page-body"
 import { PageTitle } from "@/components/layout/page-title"
@@ -30,8 +30,6 @@ function ProjectLayout() {
       matchRoute({ to: PROJECT_VIEWS[key].to, params: { projectId }, fuzzy: false }),
     ) ?? "panel"
 
-  const action = project ? PROJECT_VIEWS[view].action : null
-
   return (
     <>
       <SiteHeader
@@ -42,19 +40,7 @@ function ProjectLayout() {
             <PageTitle>Project</PageTitle>
           )
         }
-        actions={
-          project && (
-            <>
-              <ProjectMenu project={project} />
-              {action && (
-                <Button size="sm" className="gap-1.5 font-semibold">
-                  <IconPlus className="size-4" />
-                  {action}
-                </Button>
-              )}
-            </>
-          )
-        }
+        actions={project && <ProjectMenu project={project} />}
       />
 
       <PageBody>

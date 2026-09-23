@@ -15,30 +15,23 @@ export const PROJECT_VIEWS = {
     label: "Panel",
     icon: IconGauge,
     to: "/projects/$projectId",
-    action: null,
   },
   board: {
     label: "Board",
     icon: IconColumns3,
     to: "/projects/$projectId/board",
-    action: "New task",
   },
   gantt: {
     label: "Gantt",
     icon: IconTimeline,
     to: "/projects/$projectId/gantt",
-    action: "New task",
   },
   docs: {
     label: "Docs",
     icon: IconFolderOpen,
     to: "/projects/$projectId/docs",
-    action: "Upload",
   },
-} as const satisfies Record<
-  string,
-  { label: string; icon: Icon; to: string; action: string | null }
->
+} as const satisfies Record<string, { label: string; icon: Icon; to: string }>
 
 export type ProjectView = keyof typeof PROJECT_VIEWS
 

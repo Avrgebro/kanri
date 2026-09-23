@@ -1,14 +1,12 @@
 import type { ReactNode } from "react"
-import { IconSearch } from "@tabler/icons-react"
 
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 
 /**
- * Topbar for every page: identity on the left, search and the page's own
- * controls on the right. `title` is rendered as given — plain pages wrap
- * theirs in <PageTitle>, so this component never inspects what it was handed.
+ * Topbar for every page: identity on the left, the page's own controls on
+ * the right. `title` is rendered as given — plain pages wrap theirs in
+ * <PageTitle>, so this component never inspects what it was handed.
  */
 export function SiteHeader({
   title,
@@ -26,12 +24,6 @@ export function SiteHeader({
         {title}
 
         <div className="flex-1" />
-
-        <Button variant="outline" size="sm" className="gap-2 px-2 text-muted-foreground">
-          <IconSearch className="size-4" />
-          <span className="hidden w-22 text-left text-xs lg:inline">Search…</span>
-          <kbd className="rounded bg-muted px-1.5 font-mono text-[10px]">⌘K</kbd>
-        </Button>
 
         {actions}
       </div>
