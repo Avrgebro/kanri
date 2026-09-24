@@ -2,12 +2,12 @@ import { createClient } from "@supabase/supabase-js"
 
 import type { Database } from "@/types/database"
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+const url = import.meta.env.SUPABASE_URL
+const key = import.meta.env.SUPABASE_PUBLISHABLE_KEY
 
 if (!url || !key) {
   throw new Error(
-    "Missing VITE_SUPABASE_URL / VITE_SUPABASE_PUBLISHABLE_KEY.\n" +
+    "Missing SUPABASE_URL / SUPABASE_PUBLISHABLE_KEY.\n" +
       "Local dev: run `npx supabase start` (.env.development is committed).\n" +
       "Production: copy .env.example to .env.production.local and fill it in.",
   )

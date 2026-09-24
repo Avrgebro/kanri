@@ -133,12 +133,13 @@ a dashboard — local and prod must stay reproducible from `supabase/migrations/
 | **dev** | local Docker stack (`npx supabase start`) | `.env.development`, committed (fixed demo keys) |
 | **prod** | Supabase project `bafwkzrqdziezdxfuujq` (us-west-2) | `.env.production.local`, gitignored |
 
-The app reads two variables: `VITE_SUPABASE_URL` and
-`VITE_SUPABASE_PUBLISHABLE_KEY` (an `sb_publishable_…` key; set the same pair
-in Vercel). There is no secret key in this app: anything named `VITE_*` is
-compiled into the browser bundle, and the secret key bypasses RLS. Server-side
-code, if it ever exists, gets it from its own environment under a name without
-the `VITE_` prefix.
+The app reads two variables, `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`
+(an `sb_publishable_…` key). They are the names Vercel's Supabase integration
+injects, so production needs no manual setup. `envPrefix` in `vite.config.ts`
+exposes exactly those two to the browser bundle; the integration's other
+variables (secret key, service role key, database passwords) are deliberately
+kept out. There is no secret key in this app: it bypasses RLS, and anything in
+the bundle is public.
 
 ```bash
 npx supabase start                      # db, auth, storage, studio on :54321-54324
