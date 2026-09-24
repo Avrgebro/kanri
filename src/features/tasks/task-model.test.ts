@@ -65,12 +65,13 @@ describe("positions", () => {
       task("subtask", { status: "review", epic_id: "e", parent_id: "a", position: 9000 }),
       task("x", { status: "todo", epic_id: "e", position: 99999 }),
     ]
-    expect(endOfGroup(tasks, tasks[4], "review", "e")).toBe(4096 + 1024)
+    expect(endOfGroup(tasks, "review", "e", "x")).toBe(4096 + 1024)
   })
 
   it("starts an empty group at the first rank", () => {
     const x = task("x", { position: 5000 })
-    expect(endOfGroup([x], x, "done", null)).toBe(1024)
+    expect(endOfGroup([x], "done", null, "x")).toBe(1024)
+    expect(endOfGroup([x], "todo", null)).toBe(6024)
   })
 
   it("adds a subtask after its siblings", () => {

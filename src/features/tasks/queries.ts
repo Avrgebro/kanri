@@ -182,30 +182,26 @@ export function useUpdateTask(projectId: string) {
   })
 }
 
-/** Subtasks are the only tasks created in the UI so far. */
-export function useCreateSubtask(projectId: string) {
+/**
+ * A new task: a card in a board cell (status and epic), or a subtask (parent;
+ * the schema gives it the parent's epic). Everything else is filled in later.
+ */
+export interface NewTask {
+  title: string
+  status: TaskStatus
+  position: number
+  epic_id?: string | null
+  parent_id?: string
+}
+
+export function useCreateTask(projectId: string) {
   const qc = useQueryClient()
   return useMutation({
     mutationKey: taskKeys.writes(projectId),
-    mutationFn: async ({
-      parent,
-      title,
-      position,
-    }: {
-      parent: Task
-      title: string
-      position: number
-    }) => {
+    mutationFn: async (task: NewTask) => {
       const { data, error } = await supabase
         .from("tasks")
-        .insert({
-          project_id: projectId,
-          // The schema gives a subtask its parent's epic.
-          parent_id: parent.id,
-          status: "todo",
-          title,
-          position,
-        })
+        .insert({ project_id: projectId, ...task })
         .select()
         .single()
       if (error) throw error

@@ -140,7 +140,7 @@ function TaskDetail({
     // cell, and its position orders it within its parent, so it keeps it.
     const writes = task.parent_id
       ? []
-      : [{ id: task.id, position: endOfGroup(tasks, task, status, epic_id) }]
+      : [{ id: task.id, position: endOfGroup(tasks, status, epic_id, task.id) }]
     move({ taskId: task.id, status, epic_id, writes }, (err) =>
       toast.error(errorMessage(err, "Could not move task")),
     )

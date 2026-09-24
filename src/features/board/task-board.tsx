@@ -32,6 +32,7 @@ import {
   type Lane,
   type Layout,
 } from "@/features/board/board-model"
+import { AddTask } from "@/features/board/add-task"
 import { SortableTaskCard, TaskCardBody } from "@/features/board/task-card"
 import { useMoveTask } from "@/features/tasks/queries"
 import { STATUS_LABELS, STATUSES, waitingOn } from "@/features/tasks/task-model"
@@ -187,6 +188,8 @@ export function TaskBoard({
           {lanes.map((lane) => (
             <Swimlane
               key={lane.id}
+              projectId={projectId}
+              tasks={tasks}
               lane={lane}
               layout={layout}
               byId={byId}
@@ -215,6 +218,8 @@ export function TaskBoard({
 }
 
 function Swimlane({
+  projectId,
+  tasks,
   lane,
   layout,
   byId,
@@ -224,6 +229,8 @@ function Swimlane({
   collapsed,
   onToggle,
 }: {
+  projectId: string
+  tasks: Task[]
   lane: Lane
   layout: Layout
   byId: Map<string, Task>
@@ -277,6 +284,15 @@ function Swimlane({
                     )
                   )
                 })}
+                <AddTask
+                  projectId={projectId}
+                  tasks={tasks}
+                  lane={lane.id}
+                  status={status}
+                  // The first column is where work usually starts; elsewhere
+                  // the control shows on hover, so the board stays quiet.
+                  alwaysVisible={status === STATUSES[0]}
+                />
               </Cell>
             )
           })}
@@ -302,7 +318,7 @@ function Cell({
       <div
         ref={setNodeRef}
         className={cn(
-          "flex min-h-16 flex-col gap-2 rounded-lg bg-muted/40 p-2 transition-colors",
+          "group/cell flex min-h-16 flex-col gap-2 rounded-lg bg-muted/40 p-2 transition-colors",
           isOver && "bg-primary/10",
         )}
       >

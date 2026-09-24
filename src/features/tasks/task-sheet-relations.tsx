@@ -20,7 +20,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   useAddDependency,
-  useCreateSubtask,
+  useCreateTask,
   useDeleteDependency,
   useDeleteTask,
   useMoveTask,
@@ -111,7 +111,7 @@ export function Subtasks({
   onOpenTask: OpenTask
 }) {
   const move = useMoveTask(projectId)
-  const create = useCreateSubtask(projectId)
+  const create = useCreateTask(projectId)
   const [draft, setDraft] = useState("")
 
   const subtasks = tasks
@@ -131,7 +131,7 @@ export function Subtasks({
     const title = draft.trim()
     if (!title) return
     create.mutate(
-      { parent: task, title, position: nextSubtaskPosition(tasks, task.id) },
+      { parent_id: task.id, title, status: "todo", position: nextSubtaskPosition(tasks, task.id) },
       {
         onSuccess: () => setDraft(""),
         onError: (err) => toast.error(errorMessage(err, "Could not add subtask")),

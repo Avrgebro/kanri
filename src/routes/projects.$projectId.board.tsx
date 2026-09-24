@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
-import { EmptyState } from "@/components/layout/empty-state"
 import { PageBody } from "@/components/layout/page-body"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TaskBoard } from "@/features/board/task-board"
@@ -52,17 +51,6 @@ function Board() {
     )
   }
 
-  if (!tasks.data?.length) {
-    return (
-      <PageBody>
-        <EmptyState
-          title="No tasks yet"
-          description="Tasks appear here once they are created, or when an accepted estimate seeds this project."
-        />
-      </PageBody>
-    )
-  }
-
   // Opening pushes a history entry; switching between tasks inside the sheet
   // replaces it, so one press of back always closes the sheet.
   const openTask = (id: string) =>
@@ -71,7 +59,8 @@ function Board() {
 
   const data = {
     projectId,
-    tasks: tasks.data,
+    // An empty project still gets the board: its cells are where tasks are added.
+    tasks: tasks.data ?? [],
     epics: epics.data ?? [],
     dependencies: dependencies.data ?? [],
   }

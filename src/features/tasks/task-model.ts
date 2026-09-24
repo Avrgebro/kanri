@@ -76,14 +76,20 @@ const after = (siblings: Task[]) => {
 }
 
 /**
- * Where a top-level task goes when its status or epic changes anywhere but a
- * board drop: the end of its new (status, epic) group, which is a board cell.
+ * The end of a (status, epic) group of top-level tasks, which is a board
+ * cell: where a new task goes, and where one lands when its status or epic
+ * changes anywhere but a board drop. `except` leaves out the task being moved.
  * Subtasks keep their position; it orders them within their parent only.
  */
-export const endOfGroup = (tasks: Task[], task: Task, status: TaskStatus, epic_id: string | null) =>
+export const endOfGroup = (
+  tasks: Task[],
+  status: TaskStatus,
+  epic_id: string | null,
+  except?: string,
+) =>
   after(
     tasks.filter(
-      (t) => t.id !== task.id && !t.parent_id && t.status === status && t.epic_id === epic_id,
+      (t) => t.id !== except && !t.parent_id && t.status === status && t.epic_id === epic_id,
     ),
   )
 
